@@ -63,14 +63,19 @@ public class Player extends Entity {
     public void update(){
         if (keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed) {
 
-            if (keyH.upPressed) {
-                direction = "up";
-            } else if (keyH.downPressed) {
-                direction = "down";
-            } else if (keyH.leftPressed) {
-                direction = "left";
-            } else if (keyH.rightPressed) {
-                direction = "right";
+//            if (keyH.upPressed) {
+//                direction = "up";
+//            } else if (keyH.downPressed) {
+//                direction = "down";
+//            } else if (keyH.leftPressed) {
+//                direction = "left";
+//            } else if (keyH.rightPressed) {
+//                direction = "right";
+//            }
+
+            if (!keyH.directionList.isEmpty()) {
+                // Mengambil elemen terakhir dari list (index size - 1)
+                direction = keyH.directionList.get(keyH.directionList.size() - 1);
             }
 
             collisionOn = false;
@@ -78,10 +83,14 @@ public class Player extends Entity {
             gp.cChecker.checkTile(this);
             if (collisionOn == false) {
                 switch (direction) {
-                    case "up": y -= speed; break;
-                    case "down": y += speed; break;
-                    case "left": x -= speed; break;
-                    case "right": x += speed; break;
+                    case "up": y -= speed;
+                    break;
+                    case "down": y += speed;
+                    break;
+                    case "left": x -= speed;
+                    break;
+                    case "right": x += speed;
+                    break;
                 }
             }
 
@@ -96,6 +105,7 @@ public class Player extends Entity {
             }
         }
     }
+
 
     public void draw(Graphics2D g2){
         BufferedImage image = null;
