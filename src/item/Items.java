@@ -1,6 +1,6 @@
 package item;
 
-import Entity.Player;
+import entity.Player;
 
 public abstract class Items {
     String name;
