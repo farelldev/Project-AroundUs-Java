@@ -1,4 +1,4 @@
-package Main;
+package main;
 
 import javax.swing.*;
 
@@ -7,7 +7,7 @@ public class Main {
         JFrame window = new JFrame();
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setResizable(false);
-        window.setTitle("2D Adventure");
+        window.setTitle("Around Us: Apocalypse");
 
         GamePanel gamePanel = new GamePanel();
         gamePanel.startGameThread();
@@ -17,9 +17,5 @@ public class Main {
 
         window.setLocationRelativeTo(null);
         window.setVisible(true);
-
-
-
-
     }
 }

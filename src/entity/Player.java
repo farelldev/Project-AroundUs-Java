@@ -1,7 +1,7 @@
-package Entity;
+package entity;
 
-import Main.GamePanel;
-import Main.KeyHandler;
+import main.GamePanel;
+import main.KeyHandler;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -131,4 +131,32 @@ public class Player extends Entity {
 
         g2.drawImage(image, x, y, gp.tileSize, gp.tileSize, null);
     }
+    private int hp = 100;
+    private int maxHp = 100;
+    private int ammo = 30;
+
+    public int getHp() {
+        return hp;
+    }
+
+    public int getMaxHp() {
+        return maxHp;
+    }
+
+    public void heal(int amount) {
+        this.hp = Math.min(hp + amount, maxHp);
+        System.out.println("HP bertambah " + amount +
+                "! HP sekarang: " + hp);
+    }
+
+    public void addAmmo(int amount) {
+        this.ammo += amount;
+        System.out.println("Ammo bertambah " + amount +
+                "! Ammo sekarang: " + ammo);
+    }
+
+    public int getAmmo() {
+        return ammo;
+    }
 }
+
