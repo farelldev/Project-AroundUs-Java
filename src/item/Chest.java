@@ -1,6 +1,6 @@
 package item;
 
-import Entity.Player;
+import entity.Player;
 import java.util.Random;
 
 public class Chest {

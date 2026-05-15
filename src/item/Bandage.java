@@ -1,6 +1,6 @@
 package item;
 
-import Entity.Player;
+import entity.Player;
 
 public class Bandage extends Items {
     private int healAmount;
