@@ -20,7 +20,21 @@ public class Player extends Entity {
         this.keyH = keyH;
         setDevaultValues();
         getPlayerImage(); // Memanggil fungsi gambar saat player dibuat
+
+        solidArea = new Rectangle();
+        solidArea.x = 8;
+        solidArea.y = 16;
+        solidArea.width = gp.tileSize - 16;
+        solidArea.height = gp.tileSize - 16;
+
+        getPlayerImage();
     }
+
+
+
+
+
+
 
     public void setDevaultValues(){
         x = 100;
@@ -44,25 +58,35 @@ public class Player extends Entity {
         }
     }
 
+
+
     public void update(){
         if (keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed) {
 
             if (keyH.upPressed) {
-                y -= speed;
                 direction = "up";
             } else if (keyH.downPressed) {
-                y += speed;
                 direction = "down";
             } else if (keyH.leftPressed) {
-                x -= speed;
                 direction = "left";
             } else if (keyH.rightPressed) {
-                x += speed;
                 direction = "right";
             }
 
+            collisionOn = false;
+
+            gp.cChecker.checkTile(this);
+            if (collisionOn == false) {
+                switch (direction) {
+                    case "up": y -= speed; break;
+                    case "down": y += speed; break;
+                    case "left": x -= speed; break;
+                    case "right": x += speed; break;
+                }
+            }
+
             spriteCounter++;
-            if(spriteCounter > 10) { // Angka 12 adalah jeda frame, bisa diubah untuk mempercepat/memperlambat
+            if(spriteCounter > 10) {
                 if(spriteNum == 1) {
                     spriteNum = 2;
                 } else if(spriteNum == 2) {
