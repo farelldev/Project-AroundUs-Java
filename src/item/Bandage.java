@@ -1,12 +1,12 @@
-package Item;
+package item;
 
 import Entity.Player;
 
-public class Bandage extends Item{
+public class Bandage extends Items {
     private int healAmount;
 
     public Bandage(int healAmount) {
-        super("Bandage");
+        setName("Bandage");
         this.healAmount = healAmount;
     }
 
