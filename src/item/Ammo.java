@@ -1,6 +1,6 @@
 package item;
 
-import Entity.Player;
+import entity.Player;
 
 public class Ammo extends Items {
     private int ammoAmount = 30;
