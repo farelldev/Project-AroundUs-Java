@@ -1,7 +1,8 @@
-package main;
+package Main;
 
-import entity.Player;
-import tiles.tileManager;
+
+import Entity.Player;
+import TIles.tileManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,6 +25,7 @@ public class GamePanel extends JPanel implements Runnable {
     Player player =  new Player(this, keyH);
     public tileManager tileM = new tileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
+    public LevelManager levelM = new LevelManager(this);
 
 
     //set player default position
@@ -112,6 +114,7 @@ public class GamePanel extends JPanel implements Runnable {
     public void update() {
 
     player.update();
+    levelM.update();
     }
 
 
