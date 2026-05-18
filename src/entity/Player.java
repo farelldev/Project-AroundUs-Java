@@ -138,14 +138,14 @@ public class Player extends Character {
 
     public void getPlayerImage(){
         try{
-            up1 = ImageIO.read(Player.class.getResourceAsStream("/Player/up_1.png"));
-            up2 = ImageIO.read(Player.class.getResourceAsStream("/Player/up_2.png"));
-            down1 = ImageIO.read(Player.class.getResourceAsStream("/Player/down_1.png"));
-            down2 = ImageIO.read(Player.class.getResourceAsStream("/Player/down_2.png"));
-            right1 = ImageIO.read(Player.class.getResourceAsStream("/Player/right_1.png"));
-            right2 = ImageIO.read(Player.class.getResourceAsStream("/Player/right_2.png"));
-            left1 = ImageIO.read(Player.class.getResourceAsStream("/Player/left_1.png"));
-            left2 = ImageIO.read(Player.class.getResourceAsStream("/Player/left_2.png"));
+            up1 = ImageIO.read(Player.class.getResourceAsStream("/player/up_1.png"));
+            up2 = ImageIO.read(Player.class.getResourceAsStream("/player/up_2.png"));
+            down1 = ImageIO.read(Player.class.getResourceAsStream("/player/down_1.png"));
+            down2 = ImageIO.read(Player.class.getResourceAsStream("/player/down_2.png"));
+            right1 = ImageIO.read(Player.class.getResourceAsStream("/player/right_1.png"));
+            right2 = ImageIO.read(Player.class.getResourceAsStream("/player/right_2.png"));
+            left1 = ImageIO.read(Player.class.getResourceAsStream("/player/left_1.png"));
+            left2 = ImageIO.read(Player.class.getResourceAsStream("/player/left_2.png"));
         }catch(Exception e){
             e.printStackTrace();
         }

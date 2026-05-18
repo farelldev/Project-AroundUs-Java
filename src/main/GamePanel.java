@@ -2,7 +2,7 @@ package main;
 
 
 import entity.Player;
-import tiles.tileManager;
+import tiles.TileManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,7 +23,7 @@ public class GamePanel extends JPanel implements Runnable {
     KeyHandler keyH = new KeyHandler();
     Thread gameThread;
     Player player =  new Player(this, keyH);
-    public tileManager tileM = new tileManager(this);
+    public TileManager tileM = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
     public LevelManager levelM = new LevelManager(this);
 

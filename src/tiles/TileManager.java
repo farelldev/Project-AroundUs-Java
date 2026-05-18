@@ -8,15 +8,15 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class tileManager {
+public class TileManager {
 
     GamePanel gp;
-    public tile[] tile;
+    public Tile[] tile;
     public int[][] mapTileNum; // Tambahan 1: Array 2D untuk menyimpan angka map
 
-    public tileManager(GamePanel gp) {
+    public TileManager(GamePanel gp) {
         this.gp = gp;
-        tile = new tile[10];
+        tile = new Tile[10];
 
         // Mengambil ukuran dari GamePanel (16 kolom x 12 baris)
         mapTileNum = new int[gp.maxscreenCol][gp.maxscreenRow];
@@ -29,14 +29,14 @@ public class tileManager {
 
     public void getTileImage() {
         try {
-            tile[0] = new tile();
+            tile[0] = new Tile();
             tile[0].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/basicGrass.png"));
 
-            tile[1] = new tile();
+            tile[1] = new Tile();
             tile[1].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/basicWall.png"));
             tile[1].collision = true;
 
-            tile[2] = new tile();
+            tile[2] = new Tile();
             tile[2].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/basicWater.png"));
             tile[2].collision = true;
 
