@@ -15,6 +15,7 @@ public class Player extends Character {
     GamePanel gp;
     KeyHandler keyH;
 
+    // -- Statisik player -----------------------------
     private static final int XP_PER_LEVEL   = 100;
     private static final int HP_PER_LEVEL   = 20;
     private static final int DMG_PER_LEVEL  = 5;
@@ -22,20 +23,21 @@ public class Player extends Character {
     private static final int GRENADE_DAMAGE = 80;
     private static final int GRENADE_RADIUS = 150;
 
-    // Atribut Player
+    // -- Atribut Player ------------------------------
     private int        xp;
     private int        level;
     private int        maxHp;
-    private int        hp;
+    private int        currHp;
     private int        bandageBrought;
     private int        ammo;
     private List<Items> inventory;
     private Weapon      weapon;
 
-    // Variabel untuk mengatur kecepatan animasi
+    // -- Variabel untuk mengatur kecepatan animasi ---
     int spriteCounter = 0;
     int spriteNum = 1;
 
+    // -- Konstruktor ---------------------------------
     public Player(GamePanel gp, KeyHandler keyH) {
         super(BASE_MAX_HP, 15);
 
@@ -59,6 +61,73 @@ public class Player extends Character {
 
         getPlayerImage();
     }
+
+    // -- Getter --------------------------------------
+    public int getHp() {
+        return hp;
+    }
+
+    public int getMaxHp() {
+        return maxHp;
+    }
+
+    public int getAmmo() {
+        return ammo;
+    }
+
+    public Weapon getWeapon() {
+        return weapon;
+    }
+
+    // -- Heal dari bandage ---------------------------
+    public void heal(int healAmount) {
+        if (bandageBrought <= 0) { System.out.println("Bandage habis!"); return; }
+        if (hp >= maxHp)         { System.out.println("HP penuh!"); return; }
+        bandageBrought--;
+        hp = Math.min(hp + healAmount, maxHp);
+        System.out.println("[Player] Heal +" + healAmount + " HP → " + hp + "/" + maxHp);
+    }
+
+    // --Ambil peluru dari ammo -----------------------
+    public void addAmmo(int amount) {
+        this.ammo += amount;
+        System.out.println("Ammo bertambah " + amount +
+                "! Ammo sekarang: " + ammo);
+    }
+
+    // -- 3 varian attack -----------------------------
+    @Override
+    public void attack() {
+        System.out.println("[Player] Serangan jarak dekat! Dmg: " + baseDmg);
+    }
+
+    public void attack(String skill) {
+        switch (skill.toLowerCase()) {
+            case "grenade": System.out.println("[Player] GRANAT! Dmg: 80"); break;
+            case "charge":  System.out.println("[Player] CHARGE! Dmg: " + (int)(baseDmg*1.5f)); break;
+            default:        System.out.println("[Player] Skill tidak dikenal."); break;
+        }
+    }
+
+    public void attack(int multiplier) {
+        int finalDmg = baseDmg * Math.max(1, multiplier);
+        System.out.println("[Player] POWER STRIKE! Dmg: " + finalDmg
+                + " (baseDmg x" + multiplier + ")");
+    }
+
+    // -- Dapet XP ------------------------------------
+    public void addXP(int xp) {
+        this.xp += xp;
+        while (this.xp >= 100 * this.level) {
+            this.xp   -= 100 * this.level;
+            this.level++;
+            this.maxHp   += 20;
+            this.hp       = Math.min(hp + 20, maxHp);
+            this.baseDmg += 5;
+            System.out.println("[Player] LEVEL UP → Lv." + level);
+        }
+    }
+
 
     public void setDevaultValues(){
         x = 100;
@@ -135,71 +204,6 @@ public class Player extends Character {
         }
 
         g2.drawImage(image, x, y, gp.tileSize, gp.tileSize, null);
-    }
-
-    public int getHp() {
-        return hp;
-    }
-
-    public int getMaxHp() {
-        return maxHp;
-    }
-
-    public void heal() {
-        if (bandageBrought <= 0) { System.out.println("Bandage habis!"); return; }
-        if (hp >= maxHp)         { System.out.println("HP penuh!"); return; }
-        bandageBrought--;
-        hp = Math.min(hp + 25, maxHp);
-        System.out.println("[Player] Heal +25 HP → " + hp + "/" + maxHp);
-    }
-
-    public void addAmmo(int amount) {
-        this.ammo += amount;
-        System.out.println("Ammo bertambah " + amount +
-                "! Ammo sekarang: " + ammo);
-    }
-
-    public int getAmmo() {
-
-        return ammo;
-    }
-
-    public Weapon getWeapon(){
-        return weapon;
-    }
-
-    @Override
-    public void attack() {
-        System.out.println("[Player] Serangan jarak dekat! Dmg: " + baseDmg);
-    }
-    public void attack(String skill) {
-        switch (skill.toLowerCase()) {
-            case "grenade": System.out.println("[Player] GRANAT! Dmg: 80"); break;
-            case "charge":  System.out.println("[Player] CHARGE! Dmg: " + (int)(baseDmg*1.5f)); break;
-            default:        System.out.println("[Player] Skill tidak dikenal."); break;
-        }
-    }
-
-    public void addXP(int xp) {
-        this.xp += xp;
-        while (this.xp >= 100 * this.level) {
-            this.xp   -= 100 * this.level;
-            this.level++;
-            this.maxHp   += 20;
-            this.hp       = Math.min(hp + 20, maxHp);
-            this.baseDmg += 5;
-            System.out.println("[Player] LEVEL UP → Lv." + level);
-        }
-    }
-
-    public void attack(int multiplier) {
-        int finalDmg = baseDmg * Math.max(1, multiplier);
-        System.out.println("[Player] POWER STRIKE! Dmg: " + finalDmg
-                + " (baseDmg x" + multiplier + ")");
-    }
-
-    public void heal(int healAmount){
-        hp += healAmount;
     }
 }
 

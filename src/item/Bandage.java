@@ -18,13 +18,7 @@ public class Bandage extends Items {
 
     @Override
     public void use(Player player) {
-        if (player.getHp() < player.getMaxHp()) {
-            player.heal(healAmount);
-            System.out.println("Kamu menggunakan Bandage! HP +"
-                    + healAmount);
-        } else {
-            System.out.println("HP kamu sudah penuh!");
-        }
+        player.heal(healAmount);
     }
 
     public int getHealAmount() {

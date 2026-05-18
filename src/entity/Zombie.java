@@ -41,7 +41,7 @@ public class Zombie extends Character {
         // Kurangi cooldown serangan setiap frame
         if (attackCooldown > 0) attackCooldown--;
 
-        //chasePlayer(gp.player);
+        chasePlayer(gp.player);
     }
 
     public void draw(Graphics2D g2) {
