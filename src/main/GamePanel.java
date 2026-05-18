@@ -20,9 +20,9 @@ public class GamePanel extends JPanel implements Runnable {
     //FPS limit
     int FPS = 60;
 
-    KeyHandler keyH = new KeyHandler();
+    private KeyHandler keyH = new KeyHandler();
     Thread gameThread;
-    Player player =  new Player(this, keyH);
+    Player player =  new Player(this, this.keyH);
     public TileManager tileM = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
     public LevelManager levelM = new LevelManager(this);
@@ -33,12 +33,17 @@ public class GamePanel extends JPanel implements Runnable {
 //    int playerY = 100;
 //    int playerSpeed = 4;
 
+    public KeyHandler getKeyH() {
+        return keyH;
+    }
 
     public GamePanel() {
         this.setPreferredSize(new Dimension(screenWidht, screenHeight));
         this.setBackground(Color.black);
         this.setDoubleBuffered(true);
         this.addKeyListener(keyH);
+        this.addMouseMotionListener(keyH);
+        this.addMouseListener(keyH);
         this.setFocusable(true);
     }
 
