@@ -4,7 +4,7 @@ import java.awt.Rectangle;
 
 public class Bullet {
     private float x, y;
-    private float speed = 10f;
+    private final float speed = 10f;
     private int dmg;
     private boolean isActive = true;
 

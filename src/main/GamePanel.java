@@ -117,7 +117,6 @@ public class GamePanel extends JPanel implements Runnable {
     levelM.update();
     }
 
-
     //run visual
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -127,5 +126,7 @@ public class GamePanel extends JPanel implements Runnable {
         g2.dispose();
     }
 
-
+    public Player getPlayer() {
+        return player;
+    }
 }
