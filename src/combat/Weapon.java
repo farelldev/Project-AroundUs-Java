@@ -6,8 +6,7 @@ public class Weapon {
 
     public Bullet shoot(float startX, float startY, float targetX, float targetY) {
         if (ammo > 0) {
-            ammo--; // Kurangi peluru setiap nembak
-            // Bikin peluru baru dan lempar ke GamePanel
+            ammo--;
             return new Bullet(startX, startY, targetX, targetY, damage);
         }
         // Kalau peluru habis, bisa return null atau lempar suara "klik"

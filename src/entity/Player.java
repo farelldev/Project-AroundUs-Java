@@ -1,5 +1,6 @@
 package entity;
 
+import combat.Weapon;
 import main.GamePanel;
 import main.KeyHandler;
 
@@ -25,9 +26,11 @@ public class Player extends Character {
     private int        xp;
     private int        level;
     private int        maxHp;
+    private int        hp;
     private int        bandageBrought;
     private int        ammo;
-    private List<Item> inventory;
+    private List<Items> inventory;
+    private Weapon      weapon;
 
     // Variabel untuk mengatur kecepatan animasi
     int spriteCounter = 0;
@@ -57,12 +60,6 @@ public class Player extends Character {
         getPlayerImage();
     }
 
-
-
-
-
-
-
     public void setDevaultValues(){
         x = 100;
         y = 100;
@@ -84,8 +81,6 @@ public class Player extends Character {
             e.printStackTrace();
         }
     }
-
-
 
     public void update(){
         if (keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed) {
@@ -117,8 +112,6 @@ public class Player extends Character {
         }
     }
 
-
-
     public void draw(Graphics2D g2){
         BufferedImage image = null;
 
@@ -143,7 +136,6 @@ public class Player extends Character {
 
         g2.drawImage(image, x, y, gp.tileSize, gp.tileSize, null);
     }
-
 
     public int getHp() {
         return hp;
@@ -170,6 +162,11 @@ public class Player extends Character {
     public int getAmmo() {
         return ammo;
     }
+
+    public Weapon getWeapon(){
+        return weapon;
+    }
+
     @Override
     public void attack() {
         System.out.println("[Player] Serangan jarak dekat! Dmg: " + baseDmg);
@@ -181,6 +178,7 @@ public class Player extends Character {
             default:        System.out.println("[Player] Skill tidak dikenal."); break;
         }
     }
+
     public void addXP(int xp) {
         this.xp += xp;
         while (this.xp >= 100 * this.level) {
@@ -192,11 +190,15 @@ public class Player extends Character {
             System.out.println("[Player] LEVEL UP → Lv." + level);
         }
     }
+
     public void attack(int multiplier) {
         int finalDmg = baseDmg * Math.max(1, multiplier);
         System.out.println("[Player] POWER STRIKE! Dmg: " + finalDmg
                 + " (baseDmg x" + multiplier + ")");
     }
 
+    public void heal(int healAmount){
+        hp += healAmount;
+    }
 }
 
