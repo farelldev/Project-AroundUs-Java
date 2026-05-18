@@ -160,6 +160,7 @@ public class Player extends Character {
     }
 
     public int getAmmo() {
+
         return ammo;
     }
 
