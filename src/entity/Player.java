@@ -1,5 +1,6 @@
 package entity;
 
+import combat.Bullet;
 import combat.Weapon;
 import main.GamePanel;
 import main.KeyHandler;
@@ -102,8 +103,9 @@ public class Player extends Character {
         float targetX = gp.getKeyH().mouseX;
         float targetY = gp.getKeyH().mouseY;
 
-        System.out.println("[Player] Serangan biasa! Dmg: " + baseDmg);
-        weapon.shoot(weapon.getX(), weapon.getY(), targetX, targetY);
+        Bullet newBullet = weapon.shoot(weapon.getX(), weapon.getY(), targetX, targetY);
+
+        if (newBullet != null) System.out.println("[Player] Serangan biasa! Dmg: " + baseDmg);
     }
 
     public void attack(String skill) {

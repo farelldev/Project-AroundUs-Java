@@ -19,6 +19,9 @@ public class Weapon {
     private int spriteCounter = 0;
     private int spriteNum = 1;
 
+    private int shootCooldown = 0;
+    private final int SHOT_DELAY = 30; // 0.5 detik
+
     public Weapon(GamePanel gp){
         this.gp = gp;
         getWeaponImage(); // Panggil method untuk memuat gambar saat objek dibuat
@@ -45,12 +48,18 @@ public class Weapon {
     }
 
     public Bullet shoot(float startX, float startY, float targetX, float targetY) {
+        if (shootCooldown > 0 || isShooting) {
+            return null; // Mengembalikan null tanda tembakan gagal
+        }
+
         if (ammo > 0) {
             ammo--;
 
             isShooting = true;
             spriteNum = 1;
             spriteCounter = 0;
+
+            shootCooldown = SHOT_DELAY;
 
             return new Bullet(startX, startY, targetX, targetY, damage);
         }
@@ -64,9 +73,13 @@ public class Weapon {
 
         angle = Math.atan2(targetY - playerCenterY, targetX - playerCenterX);
 
-        int orbitRadius = 35;
+        int orbitRadius = 25;
         weaponX = (float) (playerCenterX + orbitRadius * Math.cos(angle));
         weaponY = (float) (playerCenterY + orbitRadius * Math.sin(angle));
+
+        if (shootCooldown > 0) {
+            shootCooldown--;
+        }
 
         if (isShooting) {
             spriteCounter++;
@@ -107,7 +120,7 @@ public class Weapon {
                 g2.scale(1, -1);
             }
 
-            float scale = 0.5f;
+            float scale = 0.4f;
             int width = (int) (image.getWidth() * scale);
             int height = (int) (image.getHeight() * scale);
 
