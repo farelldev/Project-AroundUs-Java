@@ -105,7 +105,10 @@ public class Player extends Character {
 
         Bullet newBullet = weapon.shoot(weapon.getX(), weapon.getY(), targetX, targetY);
 
-        if (newBullet != null) System.out.println("[Player] Serangan biasa! Dmg: " + baseDmg);
+        if (newBullet != null) {
+            System.out.println("[Player] Serangan biasa! Dmg: " + baseDmg);
+            gp.bullets.add(newBullet);
+        }
     }
 
     public void attack(String skill) {
