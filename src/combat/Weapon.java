@@ -24,7 +24,7 @@ public class Weapon {
 
     public Weapon(GamePanel gp){
         this.gp = gp;
-        getWeaponImage();
+        getWeaponImage(); // Panggil method untuk memuat gambar saat objek dibuat
     }
 
     public void getWeaponImage() {
@@ -61,12 +61,7 @@ public class Weapon {
 
             shootCooldown = SHOT_DELAY;
 
-            float gunLength = 25f;
-
-            float muzzleX = startX + (float) (gunLength * Math.cos(angle));
-            float muzzleY = startY + (float) (gunLength * Math.sin(angle));
-
-            return new Bullet(muzzleX, muzzleY, targetX, targetY, damage);
+            return new Bullet(startX, startY, targetX, targetY, damage);
         }
         System.out.println("Klik! Peluru habis.");
         return null;
@@ -100,6 +95,7 @@ public class Weapon {
         }
     }
 
+    // Jangan lupa bikin setter/getter buat nambah ammo nanti
     public void addAmmo(int amount) {
         this.ammo += amount;
     }
