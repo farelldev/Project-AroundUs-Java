@@ -1,5 +1,6 @@
 package entity;
 
+import combat.Bullet;
 import combat.Weapon;
 import main.GamePanel;
 import main.KeyHandler;
@@ -48,6 +49,7 @@ public class Player extends Character {
         this.maxHp          = BASE_MAX_HP;
         this.bandageBrought = 3;
         this.ammo           = 30;
+        this.weapon         = new Weapon(this.gp);
         this.inventory      = new ArrayList<>();
 
         setDevaultValues();
@@ -98,7 +100,15 @@ public class Player extends Character {
     // -- 3 varian attack -----------------------------
     @Override
     public void attack() {
-        System.out.println("[Player] Serangan jarak dekat! Dmg: " + baseDmg);
+        float targetX = gp.getKeyH().mouseX;
+        float targetY = gp.getKeyH().mouseY;
+
+        Bullet newBullet = weapon.shoot(weapon.getX(), weapon.getY(), targetX, targetY);
+
+        if (newBullet != null) {
+            System.out.println("[Player] Serangan biasa! Dmg: " + baseDmg);
+            gp.bullets.add(newBullet);
+        }
     }
 
     public void attack(String skill) {
@@ -128,7 +138,6 @@ public class Player extends Character {
         }
     }
 
-
     public void setDevaultValues(){
         x = 100;
         y = 100;
@@ -138,14 +147,14 @@ public class Player extends Character {
 
     public void getPlayerImage(){
         try{
-            up1 = ImageIO.read(Player.class.getResourceAsStream("/Player/up_1.png"));
-            up2 = ImageIO.read(Player.class.getResourceAsStream("/Player/up_2.png"));
-            down1 = ImageIO.read(Player.class.getResourceAsStream("/Player/down_1.png"));
-            down2 = ImageIO.read(Player.class.getResourceAsStream("/Player/down_2.png"));
-            right1 = ImageIO.read(Player.class.getResourceAsStream("/Player/right_1.png"));
-            right2 = ImageIO.read(Player.class.getResourceAsStream("/Player/right_2.png"));
-            left1 = ImageIO.read(Player.class.getResourceAsStream("/Player/left_1.png"));
-            left2 = ImageIO.read(Player.class.getResourceAsStream("/Player/left_2.png"));
+            up1 = ImageIO.read(Player.class.getResourceAsStream("/player/up_1.png"));
+            up2 = ImageIO.read(Player.class.getResourceAsStream("/player/up_2.png"));
+            down1 = ImageIO.read(Player.class.getResourceAsStream("/player/down_1.png"));
+            down2 = ImageIO.read(Player.class.getResourceAsStream("/player/down_2.png"));
+            right1 = ImageIO.read(Player.class.getResourceAsStream("/player/right_1.png"));
+            right2 = ImageIO.read(Player.class.getResourceAsStream("/player/right_2.png"));
+            left1 = ImageIO.read(Player.class.getResourceAsStream("/player/left_1.png"));
+            left2 = ImageIO.read(Player.class.getResourceAsStream("/player/left_2.png"));
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -153,7 +162,7 @@ public class Player extends Character {
 
     public void update(){
         if (keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed) {
-
+            // == ANIMASI PERGERAKAN ====================
             if (!keyH.directionList.isEmpty()) {
                 direction = keyH.directionList.get(keyH.directionList.size() - 1);
             }
@@ -178,6 +187,18 @@ public class Player extends Character {
                 spriteNum     = (spriteNum == 1) ? 2 : 1;
                 spriteCounter = 0;
             }
+        }
+
+        // == ANIMASI PISTOL ============================
+        if(keyH.leftMousePressed){
+            attack();
+        }
+
+        // Update posisi pistol
+        if (weapon != null) {
+            int playerCenterX = this.x + (gp.tileSize / 2);
+            int playerCenterY = this.y + (gp.tileSize / 2);
+            weapon.update(playerCenterX, playerCenterY);
         }
     }
 
@@ -204,6 +225,9 @@ public class Player extends Character {
         }
 
         g2.drawImage(image, x, y, gp.tileSize, gp.tileSize, null);
+
+        if (weapon != null) {
+            weapon.draw(g2);
+        }
     }
 }
-

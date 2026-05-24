@@ -1,11 +1,15 @@
 package main;
 
 
+import combat.Bullet;
 import entity.Player;
-import tiles.tileManager;
+import entity.Zombie;
+import item.Chest;
+import tiles.TileManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 
 public class GamePanel extends JPanel implements Runnable {
     //SCREEN SETTINGS
@@ -20,25 +24,36 @@ public class GamePanel extends JPanel implements Runnable {
     //FPS limit
     int FPS = 60;
 
-    KeyHandler keyH = new KeyHandler();
+
+    private KeyHandler keyH = new KeyHandler();
     Thread gameThread;
-    Player player =  new Player(this, keyH);
-    public tileManager tileM = new tileManager(this);
+    public TileManager tileM = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
     public LevelManager levelM = new LevelManager(this);
 
+
+    //Objek dalam game
+    Player player =  new Player(this, this.keyH);
+    public ArrayList<Bullet> bullets = new ArrayList<>();
+    public ArrayList<Zombie> zombies = new ArrayList<>();
+    public ArrayList<Chest> chests = new ArrayList<>();
 
     //set player default position
 //    int playerX = 100;
 //    int playerY = 100;
 //    int playerSpeed = 4;
 
+    public KeyHandler getKeyH() {
+        return keyH;
+    }
 
     public GamePanel() {
         this.setPreferredSize(new Dimension(screenWidht, screenHeight));
         this.setBackground(Color.black);
         this.setDoubleBuffered(true);
         this.addKeyListener(keyH);
+        this.addMouseMotionListener(keyH);
+        this.addMouseListener(keyH);
         this.setFocusable(true);
     }
 
@@ -112,17 +127,31 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     public void update() {
+        player.update();
+        levelM.update();
 
-    player.update();
-    levelM.update();
+        for (int i = 0; i < bullets.size(); i++) {
+            if (bullets.get(i).isActive()) {
+                bullets.get(i).update();
+            } else {
+                bullets.remove(i);
+                i--;
+            }
+        }
     }
 
     //run visual
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
+
         tileM.draw(g2);
         player.draw(g2);
+
+        for (int i = 0; i < bullets.size(); i++) {
+            bullets.get(i).draw(g2);
+        }
+
         g2.dispose();
     }
 
