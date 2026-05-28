@@ -32,6 +32,14 @@ public class CollisionCheck {
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityTopRow];
                     tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityTopRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
+                    } else if (tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }
@@ -41,11 +49,19 @@ public class CollisionCheck {
             case "down":
                 entityBottomRow = (entityBottomWorldY + entity.speed) / gp.tileSize;
                 // Cek agar tidak error saat menabrak batas bawah layar
-                if (entityBottomRow >= gp.maxscreenRow) {
+                if (entityBottomRow >= gp.maxWorldRow) {
                     entity.collisionOn = true;
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityBottomRow];
                     tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityBottomRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
+                    } else if (tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }
@@ -60,6 +76,14 @@ public class CollisionCheck {
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityTopRow];
                     tileNum2 = gp.tileM.mapTileNum[entityLeftCol][entityBottomRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
+                    } else if (tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }
@@ -69,11 +93,19 @@ public class CollisionCheck {
             case "right":
                 entityRightCol = (entityRightWorldX + entity.speed) / gp.tileSize;
                 // Cek agar tidak error saat menabrak batas kanan layar
-                if (entityRightCol >= gp.maxscreenCol) {
+                if (entityRightCol >= gp.maxWorldCol) {
                     entity.collisionOn = true;
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityRightCol][entityTopRow];
                     tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityBottomRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
+                    } else if (tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }

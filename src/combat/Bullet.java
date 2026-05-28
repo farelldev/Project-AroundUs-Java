@@ -115,7 +115,10 @@ public class Bullet extends Entity {
 
             AffineTransform oldTransform = g2.getTransform();
 
-            g2.translate(x, y);
+            float screenBulletX = x - gp.getPlayer().x + gp.getPlayer().screenX;
+            float screenBulletY = y - gp.getPlayer().y + gp.getPlayer().screenY;
+
+            g2.translate(screenBulletX, screenBulletY);
             g2.rotate(angle);
 
             float scale = 0.35f;

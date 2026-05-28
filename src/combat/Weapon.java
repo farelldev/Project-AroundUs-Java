@@ -1,5 +1,6 @@
 package combat;
 
+import entity.Player;
 import main.GamePanel;
 
 import javax.imageio.ImageIO;
@@ -112,7 +113,8 @@ public class Weapon {
         int targetX = gp.getKeyH().mouseX;
         int targetY = gp.getKeyH().mouseY;
 
-        angle = Math.atan2(targetY - playerCenterY, targetX - playerCenterX);
+        int mouseX = gp.getKeyH().mouseX;
+        int mouseY = gp.getKeyH().mouseY;
 
         int orbitRadius = 25;
         weaponX = (float)(playerCenterX + orbitRadius * Math.cos(angle));

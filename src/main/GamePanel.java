@@ -14,12 +14,21 @@ import java.util.ArrayList;
 public class GamePanel extends JPanel implements Runnable {
     //SCREEN SETTINGS
     final int originalTileSize = 16; //16x16 harusnya tpi bisa ganti ganti
+
     final int scale = 3;
     public final int tileSize = originalTileSize * scale;
+
+    // SCREEN SETTINGS
     public final int maxscreenCol = 16;
     public final int maxscreenRow = 12;
-    final int screenWidht = tileSize * maxscreenCol;
-    final int screenHeight = tileSize * maxscreenRow;
+    public final int screenWidht = tileSize * maxscreenCol;
+    public final int screenHeight = tileSize * maxscreenRow;
+
+    // WORLD SETTINGS (Ukuran total peta keseluruhan)
+    public final int maxWorldCol = 50;
+    public final int maxWorldRow = 50;
+    public final int worldWidth = tileSize * maxWorldCol;
+    public final int worldHeight = tileSize * maxWorldRow;
 
     //FPS limit
     int FPS = 60;
@@ -149,7 +158,7 @@ public class GamePanel extends JPanel implements Runnable {
         player.draw(g2);
 
         for (int i = 0; i < bullets.size(); i++) {
-            bullets.get(i).draw(g2);
+            bullets.get(i).draw(g2, this);
         }
 
         g2.dispose();
