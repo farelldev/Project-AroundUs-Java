@@ -16,6 +16,10 @@ public class Player extends Character {
     GamePanel gp;
     KeyHandler keyH;
 
+    // -- Ukuran Layar untuk Player -------------------
+    public final int screenX;
+    public final int screenY;
+
     // -- Statisik player -----------------------------
     private static final int XP_PER_LEVEL   = 100;
     private static final int HP_PER_LEVEL   = 20;
@@ -54,6 +58,10 @@ public class Player extends Character {
 
         setDevaultValues();
         getPlayerImage();
+
+        // Mengunci posisi render karakter tepat di titik tengah layar
+        screenX = (gp.screenWidht / 2) - (gp.tileSize / 2);
+        screenY = (gp.screenHeight / 2) - (gp.tileSize / 2);
 
         solidArea = new Rectangle();
         solidArea.x = 8;
@@ -139,8 +147,8 @@ public class Player extends Character {
     }
 
     public void setDevaultValues(){
-        x = 100;
-        y = 100;
+        x = gp.tileSize * 2;
+        y = gp.tileSize * 2;
         speed = 4;
         direction = "down";
     }
@@ -161,44 +169,68 @@ public class Player extends Character {
     }
 
     public void update(){
+        if (weapon != null) {
+            weapon.update(this);
+
+            // Baca sudut senjata untuk menentukan arah hadap Player
+            double angleDegree = Math.toDegrees(weapon.getAngle());
+
+            if (angleDegree > -45 && angleDegree <= 45) {
+                direction = "right";
+            } else if (angleDegree > 45 && angleDegree <= 135) {
+                direction = "down";
+            } else if (angleDegree > 135 || angleDegree <= -135) {
+                direction = "left";
+            } else {
+                direction = "up";
+            }
+        }
+
         if (keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed) {
-            // == ANIMASI PERGERAKAN ====================
-            if (!keyH.directionList.isEmpty()) {
-                direction = keyH.directionList.get(keyH.directionList.size() - 1);
+
+            String tempDirection = direction; // Simpan arah hadap kursor sementara
+
+            // Cek tabrakan dan gerak per tombol (Bisa jalan diagonal)
+            if (keyH.upPressed) {
+                direction = "up"; // Tipu CollisionCheck sebentar
+                collisionOn = false;
+                gp.cChecker.checkTile(this);
+                if (!collisionOn) y -= speed;
+            }
+            if (keyH.downPressed) {
+                direction = "down";
+                collisionOn = false;
+                gp.cChecker.checkTile(this);
+                if (!collisionOn) y += speed;
+            }
+            if (keyH.leftPressed) {
+                direction = "left";
+                collisionOn = false;
+                gp.cChecker.checkTile(this);
+                if (!collisionOn) x -= speed;
+            }
+            if (keyH.rightPressed) {
+                direction = "right";
+                collisionOn = false;
+                gp.cChecker.checkTile(this);
+                if (!collisionOn) x += speed;
             }
 
-            // Cek collision dengan tile
-            collisionOn = false;
-            gp.cChecker.checkTile(this);
+            direction = tempDirection; // Kembalikan animasi menghadap kursor
 
-            // Gerakkan Player hanya jika tidak nabrak tile solid
-            if (!collisionOn) {
-                switch (direction) {
-                    case "up"   : y -= speed; break;
-                    case "down" : y += speed; break;
-                    case "left" : x -= speed; break;
-                    case "right": x += speed; break;
-                }
-            }
-
-            // Animasi: ganti sprite setiap 10 frame
+            // Animasi langkah kaki
             spriteCounter++;
             if (spriteCounter > 10) {
-                spriteNum     = (spriteNum == 1) ? 2 : 1;
+                spriteNum = (spriteNum == 1) ? 2 : 1;
                 spriteCounter = 0;
             }
+        } else {
+            spriteNum = 1;
         }
 
         // == ANIMASI PISTOL ============================
         if(keyH.leftMousePressed){
             attack();
-        }
-
-        // Update posisi pistol
-        if (weapon != null) {
-            int playerCenterX = this.x + (gp.tileSize / 2);
-            int playerCenterY = this.y + (gp.tileSize / 2);
-            weapon.update(playerCenterX, playerCenterY);
         }
     }
 
@@ -224,7 +256,7 @@ public class Player extends Character {
                 break;
         }
 
-        g2.drawImage(image, x, y, gp.tileSize, gp.tileSize, null);
+        g2.drawImage(image, screenX, screenY, gp.tileSize, gp.tileSize, null);
 
         if (weapon != null) {
             weapon.draw(g2);

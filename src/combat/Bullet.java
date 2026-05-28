@@ -1,5 +1,7 @@
 package combat;
 
+import main.GamePanel;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -15,12 +17,11 @@ public class Bullet {
 
     private BufferedImage image;
 
-    public Bullet(float startX, float startY, float targetX, float targetY, int dmg) {
+    public Bullet(float startX, float startY, double angle, int dmg) {
         this.x = startX;
         this.y = startY;
         this.dmg = dmg;
-
-        this.angle = Math.atan2(targetY - startY, targetX - startX);
+        this.angle = angle;
         this.velX = speed * Math.cos(angle);
         this.velY = speed * Math.sin(angle);
 
@@ -44,7 +45,7 @@ public class Bullet {
             y += (float) velY;
 
             // DRAFT: ukuran frame 800 x 600
-            if (x < 0 || x > 800 || y < 0 || y > 600) {
+            if (x < 0 || x > 2400 || y < 0 || y > 2400) {
                 deactivate();
             }
         }
@@ -64,13 +65,16 @@ public class Bullet {
         return new Rectangle((int) x, (int) y, 5, 5);
     }
 
-    public void draw(Graphics2D g2) {
+    public void draw(Graphics2D g2, GamePanel gp) {
         if (!isActive) return;
 
         if (image != null) {
             AffineTransform oldTransform = g2.getTransform();
 
-            g2.translate(x, y);
+            float screenBulletX = x - gp.getPlayer().x + gp.getPlayer().screenX;
+            float screenBulletY = y - gp.getPlayer().y + gp.getPlayer().screenY;
+
+            g2.translate(screenBulletX, screenBulletY);
             g2.rotate(angle);
 
             float scale = 0.35f;
