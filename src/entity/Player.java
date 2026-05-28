@@ -232,6 +232,18 @@ public class Player extends Character {
         if(keyH.leftMousePressed){
             attack();
         }
+
+        // Reload saat tekan R
+        if (keyH.reloadPressed && weapon != null) {
+            weapon.startReload();
+        }
+
+        // Update posisi pistol
+        if (weapon != null) {
+            int playerCenterX = this.x + (gp.tileSize / 2);
+            int playerCenterY = this.y + (gp.tileSize / 2);
+            weapon.update(this);
+        }
     }
 
     public void draw(Graphics2D g2){
