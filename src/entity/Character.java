@@ -10,7 +10,6 @@ public abstract class Character extends Entity implements Damageable {
     public Character(int hp, int baseDmg) {
         this.hp      = hp;
         this.baseDmg = baseDmg;
-
     }
 
     @Override
