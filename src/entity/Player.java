@@ -242,7 +242,7 @@ public class Player extends Character {
         if (weapon != null) {
             int playerCenterX = this.x + (gp.tileSize / 2);
             int playerCenterY = this.y + (gp.tileSize / 2);
-            weapon.update(playerCenterX, playerCenterY);
+            weapon.update(this);
         }
     }
 
