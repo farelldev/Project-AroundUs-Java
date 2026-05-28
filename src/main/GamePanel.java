@@ -34,7 +34,7 @@ public class GamePanel extends JPanel implements Runnable {
     int FPS = 60;
 
 
-    private KeyHandler keyH = new KeyHandler();
+    private final KeyHandler keyH = new KeyHandler();
     Thread gameThread;
     public TileManager tileM = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
@@ -157,8 +157,8 @@ public class GamePanel extends JPanel implements Runnable {
         tileM.draw(g2);
         player.draw(g2);
 
-        for (int i = 0; i < bullets.size(); i++) {
-            bullets.get(i).draw(g2, this);
+        for (Bullet bullet : bullets) {
+            bullet.draw(g2, this);
         }
 
         g2.dispose();
