@@ -21,7 +21,7 @@ public class TileManager {
         tile = new Tile[256];
 
         // Mengambil ukuran dari GamePanel (16 kolom x 12 baris)
-        mapTileNum = new int[gp.maxscreenCol][gp.maxscreenRow];
+        mapTileNum = new int[gp.maxWorldCol][gp.maxWorldRow];
 
         getTileImage();
 
@@ -258,10 +258,10 @@ public class TileManager {
             int col = 0;
             int row = 0;
 
-            while (col < gp.maxscreenCol && row < gp.maxscreenRow) {
+            while (col < gp.maxWorldCol && row < gp.maxWorldRow) {
                 String line = br.readLine(); // Membaca satu baris teks
 
-                while (col < gp.maxscreenCol) {
+                while (col < gp.maxWorldCol) {
                     String[] numbers = line.split(" "); // Memisahkan angka berdasarkan spasi
                     int num = Integer.parseInt(numbers[col]); // Mengubah teks jadi angka (integer)
 
@@ -269,7 +269,7 @@ public class TileManager {
                     col++;
                 }
 
-                if (col == gp.maxscreenCol) {
+                if (col == gp.maxWorldCol) {
                     col = 0;
                     row++;
                 }
@@ -282,47 +282,68 @@ public class TileManager {
 
     // Tambahan 3: Fungsi untuk menggambar tile ke layar
     public void draw(Graphics2D g2) {
-        int col = 0;
-        int row = 0;
-        int x = 0;
-        int y = 0;
+        int worldCol = 0;
+        int worldRow = 0;
 
-        while (col < gp.maxscreenCol && row < gp.maxscreenRow) {
+        while (worldCol < gp.maxWorldCol && worldRow < gp.maxWorldRow) {
 
-            int tileNum = mapTileNum[col][row]; // ambil angka (ID tile) dari array
+            int tileNum = mapTileNum[worldCol][worldRow];
 
-            g2.drawImage(tile[tileNum].image, x, y, gp.tileSize, gp.tileSize, null);
+            // Posisi absolut tile di dunia
+            int worldX = worldCol * gp.tileSize;
+            int worldY = worldRow * gp.tileSize;
 
-            col++;
-            x += gp.tileSize;
+            // RUMUS KAMERA: Selisih jarak dunia ditambah titik tengah layar
+            int screenX = worldX - gp.getPlayer().x + gp.getPlayer().screenX;
+            int screenY = worldY - gp.getPlayer().y + gp.getPlayer().screenY;
 
-            if (col == gp.maxscreenCol) {
-                col = 0;
-                x = 0;
-                row++;
-                y += gp.tileSize;
+            // (Opsional/Optimasi) Hanya gambar tile yang saat ini masuk ke dalam area kamera/layar
+            if (worldX + gp.tileSize > gp.getPlayer().x - gp.getPlayer().screenX &&
+                    worldX - gp.tileSize < gp.getPlayer().x + gp.getPlayer().screenX &&
+                    worldY + gp.tileSize > gp.getPlayer().y - gp.getPlayer().screenY &&
+                    worldY - gp.tileSize < gp.getPlayer().y + gp.getPlayer().screenY) {
+
+                g2.drawImage(tile[tileNum].image, screenX, screenY, gp.tileSize, gp.tileSize, null);
+            }
+
+            worldCol++;
+
+            if (worldCol == gp.maxWorldCol) {
+                worldCol = 0;
+                worldRow++;
             }
         }
     }
 
-    public void switchFloor() {
+    public void switchFloor(int stairCol, int stairRow) {
+
+        // Kalkulasi posisi spawn: 1 tile ke kiri (-1) dan 1 tile ke bawah (+1)
+        int targetCol = stairCol - 1;
+        int targetRow = stairRow + 1;
+
+        // Ubah kolom/baris kembali menjadi koordinat dunia asli (X dan Y)
+        int spawnX = targetCol * gp.tileSize;
+        int spawnY = targetRow * gp.tileSize;
+
         if (currentFloor == 1) {
             currentFloor = 2;
             loadMap("/maps/building01_floor2.txt");
 
-            gp.getPlayer().x = 475;
-            gp.getPlayer().y = 100;
+            // Gunakan spawnX dan spawnY yang baru dihitung
+            gp.getPlayer().x = spawnX;
+            gp.getPlayer().y = spawnY;
 
-            System.out.println("Teleport ke Lantai 2!");
+            System.out.println("Teleport ke Lantai 2 di koordinat: " + spawnX + ", " + spawnY);
 
         } else if (currentFloor == 2) {
             currentFloor = 1;
             loadMap("/maps/building01.txt");
 
-            gp.getPlayer().x = 475;
-            gp.getPlayer().y = 100;
+            // Gunakan spawnX dan spawnY yang baru dihitung
+            gp.getPlayer().x = spawnX;
+            gp.getPlayer().y = spawnY;
 
-            System.out.println("Teleport ke Lantai 1!");
+            System.out.println("Teleport ke Lantai 1 di koordinat: " + spawnX + ", " + spawnY);
         }
     }
 }

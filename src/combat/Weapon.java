@@ -1,5 +1,6 @@
 package combat;
 
+import entity.Player;
 import main.GamePanel;
 
 import javax.imageio.ImageIO;
@@ -66,21 +67,28 @@ public class Weapon {
             float muzzleX = startX + (float) (gunLength * Math.cos(angle));
             float muzzleY = startY + (float) (gunLength * Math.sin(angle));
 
-            return new Bullet(muzzleX, muzzleY, targetX, targetY, damage);
+            return new Bullet(muzzleX, muzzleY, angle, damage);
         }
         System.out.println("Klik! Peluru habis.");
         return null;
     }
 
-    public void update(int playerCenterX, int playerCenterY) {
-        int targetX = gp.getKeyH().mouseX;
-        int targetY = gp.getKeyH().mouseY;
+    public void update(Player player) {
+        int playerScreenCenterX = player.screenX + (gp.tileSize / 2);
+        int playerScreenCenterY = player.screenY + (gp.tileSize / 2);
 
-        angle = Math.atan2(targetY - playerCenterY, targetX - playerCenterX);
+        int mouseX = gp.getKeyH().mouseX;
+        int mouseY = gp.getKeyH().mouseY;
 
-        int orbitRadius = 25;
-        weaponX = (float) (playerCenterX + orbitRadius * Math.cos(angle));
-        weaponY = (float) (playerCenterY + orbitRadius * Math.sin(angle));
+        // Mouse (Layar) dihitung dengan posisi Player (Layar)
+        angle = Math.atan2(mouseY - playerScreenCenterY, mouseX - playerScreenCenterX);
+
+        int playerWorldCenterX = player.x + (gp.tileSize / 2);
+        int playerWorldCenterY = player.y + (gp.tileSize / 2);
+
+        int orbitRadius = 30;
+        weaponX = (float) (playerWorldCenterX + orbitRadius * Math.cos(angle));
+        weaponY = (float) (playerWorldCenterY + orbitRadius * Math.sin(angle));
 
         if (shootCooldown > 0) {
             shootCooldown--;
@@ -115,9 +123,12 @@ public class Weapon {
         if (image != null) {
             AffineTransform oldTransform = g2.getTransform();
 
-            g2.translate(weaponX, weaponY);
-            g2.rotate(angle);
+            float screenWeaponX = weaponX - gp.getPlayer().x + gp.getPlayer().screenX;
+            float screenWeaponY = weaponY - gp.getPlayer().y + gp.getPlayer().screenY;
 
+            // Gunakan screenWeapon, bukan weaponX/Y asli!
+            g2.translate(screenWeaponX, screenWeaponY);
+            g2.rotate(angle);
             g2.scale(-1, 1);
 
             if (Math.abs(angle) > Math.PI / 2) {
@@ -138,5 +149,9 @@ public class Weapon {
             g2.fillRect(0, -5, 20, 10);
             g2.setTransform(oldTransform);
         }
+    }
+
+    public double getAngle(){
+        return angle;
     }
 }
