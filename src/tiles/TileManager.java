@@ -56,14 +56,14 @@ public class TileManager {
             tile[39] = new Tile();
             tile[39].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_decor3_down.png"));
 
-// Stairs
+            // Stairs
             tile[16] = new Tile();
             tile[16].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/stair_2.png"));
 
             tile[57] = new Tile();
             tile[57].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/stair_1.png"));
 
-// Barricades (Collision = true)
+            // Barricades (Collision = true)
             tile[17] = new Tile();
             tile[17].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/barricade_1.png"));
             tile[17].collision = true;
@@ -72,7 +72,7 @@ public class TileManager {
             tile[18].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/barricade_2.png"));
             tile[18].collision = true;
 
-// Doors
+            // Doors
             tile[19] = new Tile();
             tile[19].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/door_closed.png"));
             tile[19].collision = true;
@@ -89,7 +89,7 @@ public class TileManager {
             tile[41] = new Tile();
             tile[41].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_door2_left.png"));
 
-// Normal Paths
+            // Normal Paths
             tile[22] = new Tile();
             tile[22].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/path_1.png"));
 
@@ -120,7 +120,7 @@ public class TileManager {
             tile[31] = new Tile();
             tile[31].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/path_10.png"));
 
-// Water Paths (Collision = true)
+            // Water Paths (Collision = true)
             tile[32] = new Tile();
             tile[32].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/path_water1.png"));
             tile[32].collision = true;
@@ -133,7 +133,7 @@ public class TileManager {
             tile[42].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path_water_down.png"));
             tile[42].collision = true;
 
-// Seng / Zinc Fences (Collision = true)
+            // Seng / Zinc Fences (Collision = true)
             tile[34] = new Tile();
             tile[34].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/seng_1.png"));
             tile[34].collision = true;
@@ -146,7 +146,7 @@ public class TileManager {
             tile[36].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/seng_3.png"));
             tile[36].collision = true;
 
-// Side Paths
+            // Side Paths
             tile[15] = new Tile();
             tile[15].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path4_right.png"));
 
@@ -186,7 +186,7 @@ public class TileManager {
             tile[54] = new Tile();
             tile[54].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path7_down.png"));
 
-// Walls (Collision = true)
+            // Walls (Collision = true)
             tile[55] = new Tile();
             tile[55].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_wall1_left.png"));
             tile[55].collision = true;
@@ -227,7 +227,7 @@ public class TileManager {
             tile[66].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/wall_9.png"));
             tile[66].collision = true;
 
-// Windows (Collision = true)
+            // Windows (Collision = true)
             tile[56] = new Tile();
             tile[56].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_window1_left.png"));
             tile[56].collision = true;
