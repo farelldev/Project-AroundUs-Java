@@ -11,8 +11,9 @@ import java.awt.image.BufferedImage;
 public class Weapon {
     private GamePanel gp;
     private float weaponX, weaponY;
-    private int ammo = 30; // Contoh amunisi awal
-    private int damage = 10;
+    private int ammo = 7;
+    private int maxAmmo = 7;
+    private int damage = 30;
     private double angle;
 
     private BufferedImage idleImage, shoot1, shoot2, shoot3;
@@ -22,6 +23,16 @@ public class Weapon {
 
     private int shootCooldown = 0;
     private final int SHOT_DELAY = 30; // 0.5 detik
+
+    // == RELOAD ===========================================
+    private boolean isReloading = false;
+    private int reloadTimer = 0;
+    private final int RELOAD_DURATION = 120; // 2 detik (60fps x 2)
+
+    // Sudut senjata saat reload: mengarah ke bawah 90 derajat + miring 45 = 135 derajat
+    // tapi kita set fixed angle = PI/2 + PI/4 = 3*PI/4 (ke bawah 45 derajat dari sumbu bawah)
+    // Lebih simpel: sudut 90 derajat (lurus ke bawah) + 45 derajat = 135 derajat
+    private final double RELOAD_ANGLE = Math.PI / 2 + Math.PI / 4; // 135 derajat (ke bawah kiri)
 
     public Weapon(GamePanel gp){
         this.gp = gp;
@@ -40,68 +51,84 @@ public class Weapon {
         }
     }
 
-    public float getX() {
-        return weaponX;
-    }
+    public float getX() { return weaponX; }
+    public float getY() { return weaponY; }
+    public boolean isReloading() { return isReloading; }
+    public int getAmmo() { return ammo; }
+    public int getMaxAmmo() { return maxAmmo; }
 
-    public float getY() {
-        return weaponY;
+    // Dipanggil dari Player saat tekan R
+    public void startReload() {
+        if (isReloading) return;          // sudah reload, abaikan
+        if (ammo >= maxAmmo) return;      // peluru penuh, tidak perlu reload
+        isReloading = true;
+        reloadTimer = 0;
+        isShooting  = false;
+        System.out.println("[Weapon] Reloading...");
     }
 
     public Bullet shoot(float startX, float startY, float targetX, float targetY) {
-        if (shootCooldown > 0 || isShooting) {
-            return null; // Mengembalikan null tanda tembakan gagal
-        }
+        if (isReloading) return null;     // tidak bisa tembak saat reload
+        if (shootCooldown > 0 || isShooting) return null;
 
         if (ammo > 0) {
             ammo--;
-
             isShooting = true;
             spriteNum = 1;
             spriteCounter = 0;
-
             shootCooldown = SHOT_DELAY;
 
             float gunLength = 25f;
+            float muzzleX = startX + (float)(gunLength * Math.cos(angle));
+            float muzzleY = startY + (float)(gunLength * Math.sin(angle));
 
-            float muzzleX = startX + (float) (gunLength * Math.cos(angle));
-            float muzzleY = startY + (float) (gunLength * Math.sin(angle));
-
-            return new Bullet(muzzleX, muzzleY, angle, damage);
+            return new Bullet(gp, muzzleX, muzzleY, targetX, targetY, damage);
         }
         System.out.println("Klik! Peluru habis.");
         return null;
     }
 
-    public void update(Player player) {
-        int playerScreenCenterX = player.screenX + (gp.tileSize / 2);
-        int playerScreenCenterY = player.screenY + (gp.tileSize / 2);
+    public void update(int playerCenterX, int playerCenterY) {
+        // == Proses Reload ================================
+        if (isReloading) {
+            reloadTimer++;
+
+            // Senjata menghadap ke bawah 45 derajat (fixed), tidak ikut mouse
+            angle = RELOAD_ANGLE;
+
+            int orbitRadius = 25;
+            weaponX = (float)(playerCenterX + orbitRadius * Math.cos(angle));
+            weaponY = (float)(playerCenterY + orbitRadius * Math.sin(angle));
+
+            if (reloadTimer >= RELOAD_DURATION) {
+                ammo        = maxAmmo;
+                isReloading = false;
+                reloadTimer = 0;
+                System.out.println("[Weapon] Reload selesai! Ammo: " + ammo + "/" + maxAmmo);
+            }
+            return; // skip update normal saat reload
+        }
+
+        // == Update Normal (ikut mouse) ===================
+        int targetX = gp.getKeyH().mouseX;
+        int targetY = gp.getKeyH().mouseY;
 
         int mouseX = gp.getKeyH().mouseX;
         int mouseY = gp.getKeyH().mouseY;
 
-        // Mouse (Layar) dihitung dengan posisi Player (Layar)
-        angle = Math.atan2(mouseY - playerScreenCenterY, mouseX - playerScreenCenterX);
+        int orbitRadius = 25;
+        weaponX = (float)(playerCenterX + orbitRadius * Math.cos(angle));
+        weaponY = (float)(playerCenterY + orbitRadius * Math.sin(angle));
 
-        int playerWorldCenterX = player.x + (gp.tileSize / 2);
-        int playerWorldCenterY = player.y + (gp.tileSize / 2);
-
-        int orbitRadius = 30;
-        weaponX = (float) (playerWorldCenterX + orbitRadius * Math.cos(angle));
-        weaponY = (float) (playerWorldCenterY + orbitRadius * Math.sin(angle));
-
-        if (shootCooldown > 0) {
-            shootCooldown--;
-        }
+        if (shootCooldown > 0) shootCooldown--;
 
         if (isShooting) {
             spriteCounter++;
             if (spriteCounter > 5) {
                 spriteNum++;
                 spriteCounter = 0;
-
                 if (spriteNum > 3) {
-                    spriteNum = 1;
+                    spriteNum  = 1;
                     isShooting = false;
                 }
             }
@@ -109,7 +136,7 @@ public class Weapon {
     }
 
     public void addAmmo(int amount) {
-        this.ammo += amount;
+        this.ammo = Math.min(this.ammo + amount, maxAmmo);
     }
 
     public void draw(Graphics2D g2) {
@@ -123,11 +150,7 @@ public class Weapon {
         if (image != null) {
             AffineTransform oldTransform = g2.getTransform();
 
-            float screenWeaponX = weaponX - gp.getPlayer().x + gp.getPlayer().screenX;
-            float screenWeaponY = weaponY - gp.getPlayer().y + gp.getPlayer().screenY;
-
-            // Gunakan screenWeapon, bukan weaponX/Y asli!
-            g2.translate(screenWeaponX, screenWeaponY);
+            g2.translate(weaponX, weaponY);
             g2.rotate(angle);
             g2.scale(-1, 1);
 
@@ -136,10 +159,20 @@ public class Weapon {
             }
 
             float scale = 0.4f;
-            int width = (int) (image.getWidth() * scale);
-            int height = (int) (image.getHeight() * scale);
+            int width  = (int)(image.getWidth()  * scale);
+            int height = (int)(image.getHeight() * scale);
+
+            // Sedikit transparansi saat reload sebagai visual feedback
+            if (isReloading) {
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            }
 
             g2.drawImage(image, -width / 2, -height / 2, width, height, null);
+
+            if (isReloading) {
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+            }
+
             g2.setTransform(oldTransform);
         } else {
             AffineTransform oldTransform = g2.getTransform();
@@ -149,9 +182,5 @@ public class Weapon {
             g2.fillRect(0, -5, 20, 10);
             g2.setTransform(oldTransform);
         }
-    }
-
-    public double getAngle(){
-        return angle;
     }
 }
