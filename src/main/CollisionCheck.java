@@ -32,6 +32,12 @@ public class CollisionCheck {
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityTopRow];
                     tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityTopRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57 || tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor();
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }
@@ -46,6 +52,12 @@ public class CollisionCheck {
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityBottomRow];
                     tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityBottomRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57 || tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor();
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }
@@ -60,6 +72,12 @@ public class CollisionCheck {
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityTopRow];
                     tileNum2 = gp.tileM.mapTileNum[entityLeftCol][entityBottomRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57 || tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor();
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }
@@ -74,6 +92,12 @@ public class CollisionCheck {
                 } else {
                     tileNum1 = gp.tileM.mapTileNum[entityRightCol][entityTopRow];
                     tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityBottomRow];
+
+                    // CEK TANGGA
+                    if (tileNum1 == 16 || tileNum1 == 57 || tileNum2 == 16 || tileNum2 == 57) {
+                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor();
+                    }
+
                     if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
                         entity.collisionOn = true;
                     }

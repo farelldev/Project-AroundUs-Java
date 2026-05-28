@@ -14,6 +14,8 @@ public class TileManager {
     public Tile[] tile;
     public int[][] mapTileNum; // Tambahan 1: Array 2D untuk menyimpan angka map
 
+    public int currentFloor = 1;
+
     public TileManager(GamePanel gp) {
         this.gp = gp;
         tile = new Tile[256];
@@ -300,6 +302,27 @@ public class TileManager {
                 row++;
                 y += gp.tileSize;
             }
+        }
+    }
+
+    public void switchFloor() {
+        if (currentFloor == 1) {
+            currentFloor = 2;
+            loadMap("/maps/building01_floor2.txt");
+
+            gp.getPlayer().x = 475;
+            gp.getPlayer().y = 100;
+
+            System.out.println("Teleport ke Lantai 2!");
+
+        } else if (currentFloor == 2) {
+            currentFloor = 1;
+            loadMap("/maps/building01.txt");
+
+            gp.getPlayer().x = 475;
+            gp.getPlayer().y = 100;
+
+            System.out.println("Teleport ke Lantai 1!");
         }
     }
 }
