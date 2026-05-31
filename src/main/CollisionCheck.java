@@ -11,106 +11,67 @@ public class CollisionCheck {
     }
 
     public void checkTile(Entity entity) {
-        int entityLeftWorldX = entity.x + entity.solidArea.x;
-        int entityRightWorldX = entity.x + entity.solidArea.x + entity.solidArea.width;
-        int entityTopWorldY = entity.y + entity.solidArea.y;
+        int entityLeftWorldX   = entity.x + entity.solidArea.x;
+        int entityRightWorldX  = entity.x + entity.solidArea.x + entity.solidArea.width;
+        int entityTopWorldY    = entity.y + entity.solidArea.y;
         int entityBottomWorldY = entity.y + entity.solidArea.y + entity.solidArea.height;
 
-        int entityLeftCol = entityLeftWorldX / gp.tileSize;
-        int entityRightCol = entityRightWorldX / gp.tileSize;
-        int entityTopRow = entityTopWorldY / gp.tileSize;
+        int entityLeftCol   = entityLeftWorldX  / gp.tileSize;
+        int entityRightCol  = entityRightWorldX / gp.tileSize;
+        int entityTopRow    = entityTopWorldY   / gp.tileSize;
         int entityBottomRow = entityBottomWorldY / gp.tileSize;
 
-        int tileNum1, tileNum2;
-
         switch (entity.direction) {
-            case "up":
-                entityTopRow = (entityTopWorldY - entity.speed) / gp.tileSize;
-                // Cek agar tidak error saat menabrak batas atas layar
-                if (entityTopRow < 0) {
+            case "up": {
+                int row = (entityTopWorldY - entity.speed) / gp.tileSize;
+                // CEK TANGGA
+                checkStair(entity, entityLeftCol, row);
+                checkStair(entity, entityRightCol, row);
+                if (gp.tileM.isCollision(entityLeftCol, row) ||
+                        gp.tileM.isCollision(entityRightCol, row)) {
                     entity.collisionOn = true;
-                } else {
-                    tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityTopRow];
-                    tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityTopRow];
-
-                    // CEK TANGGA
-                    if (tileNum1 == 16 || tileNum1 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
-                    } else if (tileNum2 == 16 || tileNum2 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
-                    }
-
-                    if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
-                        entity.collisionOn = true;
-                    }
                 }
                 break;
-
-            case "down":
-                entityBottomRow = (entityBottomWorldY + entity.speed) / gp.tileSize;
-                // Cek agar tidak error saat menabrak batas bawah layar
-                if (entityBottomRow >= gp.maxWorldRow) {
+            }
+            case "down": {
+                int row = (entityBottomWorldY + entity.speed) / gp.tileSize;
+                checkStair(entity, entityLeftCol, row);
+                checkStair(entity, entityRightCol, row);
+                if (gp.tileM.isCollision(entityLeftCol, row) ||
+                        gp.tileM.isCollision(entityRightCol, row)) {
                     entity.collisionOn = true;
-                } else {
-                    tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityBottomRow];
-                    tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityBottomRow];
-
-                    // CEK TANGGA
-                    if (tileNum1 == 16 || tileNum1 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
-                    } else if (tileNum2 == 16 || tileNum2 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
-                    }
-
-                    if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
-                        entity.collisionOn = true;
-                    }
                 }
                 break;
-
-            case "left":
-                entityLeftCol = (entityLeftWorldX - entity.speed) / gp.tileSize;
-                // Cek agar tidak error saat menabrak batas kiri layar
-                if (entityLeftCol < 0) {
+            }
+            case "left": {
+                int col = (entityLeftWorldX - entity.speed) / gp.tileSize;
+                checkStair(entity, col, entityTopRow);
+                checkStair(entity, col, entityBottomRow);
+                if (gp.tileM.isCollision(col, entityTopRow) ||
+                        gp.tileM.isCollision(col, entityBottomRow)) {
                     entity.collisionOn = true;
-                } else {
-                    tileNum1 = gp.tileM.mapTileNum[entityLeftCol][entityTopRow];
-                    tileNum2 = gp.tileM.mapTileNum[entityLeftCol][entityBottomRow];
-
-                    // CEK TANGGA
-                    if (tileNum1 == 16 || tileNum1 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
-                    } else if (tileNum2 == 16 || tileNum2 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
-                    }
-
-                    if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
-                        entity.collisionOn = true;
-                    }
                 }
                 break;
-
-            case "right":
-                entityRightCol = (entityRightWorldX + entity.speed) / gp.tileSize;
-                // Cek agar tidak error saat menabrak batas kanan layar
-                if (entityRightCol >= gp.maxWorldCol) {
+            }
+            case "right": {
+                int col = (entityRightWorldX + entity.speed) / gp.tileSize;
+                checkStair(entity, col, entityTopRow);
+                checkStair(entity, col, entityBottomRow);
+                if (gp.tileM.isCollision(col, entityTopRow) ||
+                        gp.tileM.isCollision(col, entityBottomRow)) {
                     entity.collisionOn = true;
-                } else {
-                    tileNum1 = gp.tileM.mapTileNum[entityRightCol][entityTopRow];
-                    tileNum2 = gp.tileM.mapTileNum[entityRightCol][entityBottomRow];
-
-                    // CEK TANGGA
-                    if (tileNum1 == 16 || tileNum1 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityLeftCol, entityTopRow);
-                    } else if (tileNum2 == 16 || tileNum2 == 57) {
-                        if (entity.equals(gp.getPlayer())) gp.tileM.switchFloor(entityRightCol, entityTopRow);
-                    }
-
-                    if (gp.tileM.tile[tileNum1].collision || gp.tileM.tile[tileNum2].collision) {
-                        entity.collisionOn = true;
-                    }
                 }
                 break;
+            }
+        }
+    }
+
+    private void checkStair(Entity entity, int col, int row) {
+        if (!entity.equals(gp.getPlayer())) return;
+        if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) return;
+        int num = gp.tileM.mapTileNum[col][row];
+        if (num == 16 || num == 57) {
+            gp.tileM.switchFloor(col, row);
         }
     }
 }
