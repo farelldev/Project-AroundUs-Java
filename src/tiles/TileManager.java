@@ -52,9 +52,11 @@ public class TileManager {
 
             tile[38] = new Tile();
             tile[38].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_decor2_down.png"));
+            tile[38].collision = true;
 
             tile[39] = new Tile();
             tile[39].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_decor3_down.png"));
+            tile[39].collision = true;
 
             // Stairs
             tile[16] = new Tile();
@@ -152,6 +154,7 @@ public class TileManager {
 
             tile[43] = new Tile();
             tile[43].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path1_down.png"));
+            tile[43].collision = true;
 
             tile[44] = new Tile();
             tile[44].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path1_left.png"));
@@ -161,6 +164,7 @@ public class TileManager {
 
             tile[46] = new Tile();
             tile[46].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path2_down.png"));
+            tile[46].collision = true;
 
             tile[47] = new Tile();
             tile[47].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path2_left.png"));
@@ -170,6 +174,7 @@ public class TileManager {
 
             tile[49] = new Tile();
             tile[49].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path3_down.png"));
+            tile[49].collision = true;
 
             tile[50] = new Tile();
             tile[50].image = ImageIO.read(getClass().getResourceAsStream("/basicTexture/buildingTexture/side_path3_right.png"));
@@ -249,30 +254,28 @@ public class TileManager {
         }
     }
 
-    // Tambahan 2: Fungsi untuk membaca angka dari file text (.txt)
+    // Fungsi untuk membaca angka dari file text (.txt) — ukuran map bebas
     public void loadMap(String filePath) {
         try {
+            // Reset semua tile ke -1 (void/kosong) dulu
+            for (int c = 0; c < gp.maxWorldCol; c++)
+                for (int r = 0; r < gp.maxWorldRow; r++)
+                    mapTileNum[c][r] = -1;
+
             InputStream is = getClass().getResourceAsStream(filePath);
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
-            int col = 0;
+            String line;
             int row = 0;
+            while ((line = br.readLine()) != null && row < gp.maxWorldRow) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
 
-            while (col < gp.maxWorldCol && row < gp.maxWorldRow) {
-                String line = br.readLine(); // Membaca satu baris teks
-
-                while (col < gp.maxWorldCol) {
-                    String[] numbers = line.split(" "); // Memisahkan angka berdasarkan spasi
-                    int num = Integer.parseInt(numbers[col]); // Mengubah teks jadi angka (integer)
-
-                    mapTileNum[col][row] = num;
-                    col++;
+                String[] numbers = line.split("\\s+");
+                for (int col = 0; col < numbers.length && col < gp.maxWorldCol; col++) {
+                    mapTileNum[col][row] = Integer.parseInt(numbers[col]);
                 }
-
-                if (col == gp.maxWorldCol) {
-                    col = 0;
-                    row++;
-                }
+                row++;
             }
             br.close();
         } catch (Exception e) {
@@ -288,6 +291,13 @@ public class TileManager {
         while (worldCol < gp.maxWorldCol && worldRow < gp.maxWorldRow) {
 
             int tileNum = mapTileNum[worldCol][worldRow];
+
+            // Skip tile void (area di luar map) — tampil hitam (background panel)
+            if (tileNum == -1) {
+                worldCol++;
+                if (worldCol == gp.maxWorldCol) { worldCol = 0; worldRow++; }
+                continue;
+            }
 
             // Posisi absolut tile di dunia
             int worldX = worldCol * gp.tileSize;
@@ -315,6 +325,15 @@ public class TileManager {
         }
     }
 
+    /** Cek apakah tile di col/row adalah collision (termasuk void = -1) */
+    public boolean isCollision(int col, int row) {
+        if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) return true;
+        int num = mapTileNum[col][row];
+        if (num == -1) return true;                          // void = solid
+        if (tile[num] == null) return true;
+        return tile[num].collision;
+    }
+
     public void switchFloor(int stairCol, int stairRow) {
 
         // Kalkulasi posisi spawn: 1 tile ke kiri (-1) dan 1 tile ke bawah (+1)
@@ -329,9 +348,12 @@ public class TileManager {
             currentFloor = 2;
             loadMap("/maps/building01_floor2.txt");
 
-            // Gunakan spawnX dan spawnY yang baru dihitung
             gp.getPlayer().x = spawnX;
             gp.getPlayer().y = spawnY;
+
+            // Tandai perpindahan floor — akan dieksekusi setelah update loop selesai
+            // agar tidak terjadi ConcurrentModificationException saat iterasi zombie
+            gp.requestFloorSwitch(2);
 
             System.out.println("Teleport ke Lantai 2 di koordinat: " + spawnX + ", " + spawnY);
 
@@ -339,9 +361,11 @@ public class TileManager {
             currentFloor = 1;
             loadMap("/maps/building01.txt");
 
-            // Gunakan spawnX dan spawnY yang baru dihitung
             gp.getPlayer().x = spawnX;
             gp.getPlayer().y = spawnY;
+
+            // Tandai perpindahan floor — akan dieksekusi setelah update loop selesai
+            gp.requestFloorSwitch(1);
 
             System.out.println("Teleport ke Lantai 1 di koordinat: " + spawnX + ", " + spawnY);
         }
