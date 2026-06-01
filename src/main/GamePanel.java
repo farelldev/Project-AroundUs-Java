@@ -34,8 +34,6 @@ public class GamePanel extends JPanel implements Runnable {
     int FPS = 60;
 
     private KeyHandler keyH = new KeyHandler();
-
-    private final KeyHandler keyH = new KeyHandler();
     Thread gameThread;
     public TileManager    tileM    = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
