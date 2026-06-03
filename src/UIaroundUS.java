@@ -113,7 +113,7 @@ public class UIaroundUS extends JPanel implements KeyListener {
 
             // Pindah Musik!
             Musik.stop(); // Matikan lagu menu
-            Musik.playBGM("assets/Horror Menu.wav"); // Putar lagu gameplay yang tegang!
+            Musik.playBGM("assets/bgm_arena.wav"); // Putar lagu gameplay yang tegang!
         }
 
         // 2. LOGIKA SELAMA MAIN (HALAMAN 2)
