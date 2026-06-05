@@ -1,20 +1,42 @@
 package item;
 
 import entity.Player;
+import main.GamePanel;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.Random;
 
 public class Chest {
+    private GamePanel gp;
     private float x;
     private float y;
     private Items content;
     private boolean isOpened;
     private static final int INTERACTION_RANGE = 50;
 
-    public Chest(float x, float y) {
+    // Gambar Peti
+    private BufferedImage imageClosed, imageOpened;
+
+    // Tambahkan GamePanel di konstruktor
+    public Chest(GamePanel gp, float x, float y) {
+        this.gp = gp;
         this.x = x;
         this.y = y;
         this.isOpened = false;
         this.content = generateRandomItem();
+
+        loadImages();
+    }
+
+    private void loadImages() {
+        try {
+            imageClosed = ImageIO.read(getClass().getResourceAsStream("/items/chest/chest_closed.png"));
+            imageOpened = ImageIO.read(getClass().getResourceAsStream("/items/chest/chest_opened.png"));
+        } catch (Exception e) {
+            System.out.println("Gagal memuat gambar chest!");
+        }
     }
 
     private Items generateRandomItem() {
@@ -37,28 +59,39 @@ public class Chest {
         return distance <= INTERACTION_RANGE;
     }
 
-    public void open(Player player) {
+    public void open(Player player, GamePanel gp) { // Tambahkan parameter gp
         if (!isOpened) {
             if (isPlayerNearby(player)) {
-                content.use(player);
                 isOpened = true;
-                System.out.println("Chest dibuka! Kamu mendapat: "
-                        + content.name);
+
+                // Lempar item ke tanah (geser sedikit ke bawah peti agar visualnya tidak tertumpuk)
+                content.x = this.x;
+                content.y = this.y + (gp.tileSize / 2);
+
+                // Masukkan item ke daftar barang jatuh di GamePanel
+                gp.droppedItems.add(content);
+
+                System.out.println("Chest dibuka! " + content.name + " jatuh ke lantai.");
             } else {
                 System.out.println("Kamu terlalu jauh dari chest!");
             }
-        } else {
-            System.out.println("Chest sudah dibuka!");
         }
     }
 
-    public void appear() {
-        isOpened = false;
-        content = generateRandomItem();
-    }
+    // Fungsi menggambar peti dengan Rumus Kamera Dunia
+    public void draw(Graphics2D g2) {
+        int screenX = (int) x - gp.getPlayer().x + gp.getPlayer().screenX;
+        int screenY = (int) y - gp.getPlayer().y + gp.getPlayer().screenY;
 
-    public void disappear() {
-        isOpened = true;
+        BufferedImage img = isOpened ? imageOpened : imageClosed;
+
+        if (img != null) {
+            g2.drawImage(img, screenX, screenY, gp.tileSize, gp.tileSize, null);
+        } else {
+            // Fallback kalau gambar error (Kotak coklat/kuning)
+            g2.setColor(isOpened ? Color.YELLOW : new Color(139, 69, 19));
+            g2.fillRect(screenX, screenY, gp.tileSize, gp.tileSize);
+        }
     }
 
     public float getX() { return x; }
