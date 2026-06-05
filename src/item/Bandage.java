@@ -9,11 +9,13 @@ public class Bandage extends Items {
     public Bandage() {
         setName("Bandage");
         this.healAmount = DEFAULT_HEAL;
+        loadImage("bandage");
     }
 
     public Bandage(int healAmount) {
         setName("Bandage");
         this.healAmount = healAmount;
+        loadImage("bandage");
     }
 
     @Override

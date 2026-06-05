@@ -1,5 +1,10 @@
 package entity;
 
+import item.Items;
+import item.Ammo;
+import item.Bandage;
+
+import java.util.Random;
 import main.GamePanel;
 import java.awt.Rectangle;
 import java.awt.Graphics2D;
@@ -88,11 +93,37 @@ public class Zombie extends Character {
         if (hp <= 0) {
             state = State.DEAD;
             deadTimer = 0;
+
+            dropRandomItem();
         } else {
             state = State.HURT;
             hurtTimer = 20; // 20 frame animasi hurt
             spriteNum = 1;
             spriteCounter = 0;
+        }
+    }
+
+    private void dropRandomItem() {
+        Random random = new Random();
+
+        // Peluang 30% (Angka acak dari 0-99, jika di bawah 30 maka drop)
+        if (random.nextInt(100) < 30) {
+            Items drop;
+
+            // Jika berhasil drop, acak lagi: 50% Ammo, 50% Bandage
+            if (random.nextBoolean()) {
+                drop = new Ammo();
+            } else {
+                drop = new Bandage(10); // Heal 10 HP biar gak terlalu OP
+            }
+
+            // Set koordinat jatuhnya item persis di koordinat zombie mati
+            drop.x = this.x;
+            drop.y = this.y + (gp.tileSize / 4); // Geser dikit ke bawah biar gak terlalu ketutupan mayat
+
+            // Masukkan ke keranjang drop di GamePanel
+            gp.droppedItems.add(drop);
+            System.out.println("[Zombie] Mati dan menjatuhkan " + drop.name + "!");
         }
     }
 

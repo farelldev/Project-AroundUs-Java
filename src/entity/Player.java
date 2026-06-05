@@ -36,7 +36,7 @@ public class Player extends Character {
     private int        bandageBrought;
     private int        ammo;
     private List<Items> inventory;
-    private Weapon      weapon;
+    private final Weapon      weapon;
 
     // -- Variabel untuk mengatur kecepatan animasi ---
     int spriteCounter = 0;
