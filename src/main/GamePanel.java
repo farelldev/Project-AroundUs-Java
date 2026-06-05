@@ -66,6 +66,9 @@ public class GamePanel extends JPanel implements Runnable {
     // UI Images
     private BufferedImage hpImg100, hpImg75, hpImg50, hpImg25, hpImg10;
     private BufferedImage zombieCounterBG; // <-- VARIABEL BARU UNTUK BG ZOMBIE
+    private BufferedImage buttonESprite1, buttonESprite2;
+    private int buttonAnimCounter = 0;
+    private int buttonAnimFrame   = 0; // 0 = sprite1, 1 = sprite2
 
     // Courier Prime fonts
     private Font cpRegular, cpBold, cpItalic, cpBoldItalic;
@@ -90,10 +93,10 @@ public class GamePanel extends JPanel implements Runnable {
         try {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
-            InputStream isReg  = getClass().getResourceAsStream("/fonts/CourierPrime-Regular.ttf");
-            InputStream isBold = getClass().getResourceAsStream("/fonts/CourierPrime-Bold.ttf");
-            InputStream isItal = getClass().getResourceAsStream("/fonts/CourierPrime-Italic.ttf");
-            InputStream isBoldItal = getClass().getResourceAsStream("/fonts/CourierPrime-BoldItalic.ttf");
+            InputStream isReg  = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
+            InputStream isBold = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
+            InputStream isItal = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
+            InputStream isBoldItal = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
 
             Font baseReg      = Font.createFont(Font.TRUETYPE_FONT, isReg);
             Font baseBold     = Font.createFont(Font.TRUETYPE_FONT, isBold);
@@ -137,6 +140,8 @@ public class GamePanel extends JPanel implements Runnable {
     private void loadUIImages() {
         try {
             zombieCounterBG = ImageIO.read(getClass().getResourceAsStream("/uiGraphics/zombieCounterBG.png"));
+            buttonESprite1  = ImageIO.read(getClass().getResourceAsStream("/uiGraphics/button/buttonE_sprite1.png"));
+            buttonESprite2  = ImageIO.read(getClass().getResourceAsStream("/uiGraphics/button/buttonE_sprite2.png"));
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("[GamePanel] Gagal memuat UI zombieCounterBG.png!");
@@ -248,6 +253,18 @@ public class GamePanel extends JPanel implements Runnable {
         if (nearStair && keyH.ePressed) {
             tileM.switchFloor(nearStairCol, nearStairRow);
             keyH.ePressed = false; // konsumsi satu kali tekan
+        }
+
+        // Animasi sprite tombol E
+        if (nearStair) {
+            buttonAnimCounter++;
+            if (buttonAnimCounter >= 30) {
+                buttonAnimFrame   = (buttonAnimFrame == 0) ? 1 : 0;
+                buttonAnimCounter = 0;
+            }
+        } else {
+            buttonAnimCounter = 0;
+            buttonAnimFrame   = 0;
         }
     }
 
@@ -365,85 +382,25 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     private void drawStairPrompt(Graphics2D g2) {
-        // Posisi di tengah bawah layar
-        int centerX = screenWidht / 2;
-        int baseY   = screenHeight - 80;
+        // Konversi posisi tangga dari world coords ke screen coords
+        int stairWorldX = nearStairCol * tileSize;
+        int stairWorldY = nearStairRow * tileSize;
+        int stairScreenX = stairWorldX - player.x + player.screenX;
+        int stairScreenY = stairWorldY - player.y + player.screenY;
 
-        // Animasi pulse sederhana berdasarkan waktu
-        long pulse = (System.currentTimeMillis() / 400) % 2;
-        boolean bright = pulse == 0;
+        // Pilih sprite berdasarkan frame animasi
+        BufferedImage btnSprite = (buttonAnimFrame == 0) ? buttonESprite1 : buttonESprite2;
+        if (btnSprite == null) return;
 
-        // --- Bayangan / glow ---
-        g2.setColor(new Color(0, 0, 0, 120));
-        g2.fillRoundRect(centerX - 62, baseY - 2, 126, 48, 6, 6);
+        int btnW = 20;
+        int btnH = 20;
 
-        // --- Background panel ---
-        Color panelBg = bright ? new Color(30, 30, 50, 220) : new Color(20, 20, 38, 200);
-        g2.setColor(panelBg);
-        g2.fillRoundRect(centerX - 61, baseY - 3, 124, 46, 6, 6);
+        // Posisi di tengah atas tile tangga
+        int btnX = stairScreenX + (tileSize / 2) - (btnW / 2);
+        // Sprite2 turun sedikit untuk efek "klik"
+        int btnY = stairScreenY - btnH - 6 + (buttonAnimFrame == 1 ? 4 : 0);
 
-        // --- Border panel ---
-        g2.setColor(new Color(90, 90, 140, 200));
-        g2.setStroke(new BasicStroke(1));
-        g2.drawRoundRect(centerX - 61, baseY - 3, 124, 46, 6, 6);
-
-        // ---- Tombol [E] pixel style ----
-        int btnX = centerX - 56;
-        int btnY = baseY + 5;
-        int btnSize = 28;
-
-        // Shadow tombol (pixel offset)
-        g2.setColor(new Color(0, 0, 0, 180));
-        g2.fillRect(btnX + 3, btnY + 3, btnSize, btnSize);
-
-        // Body tombol
-        Color btnColor = bright ? new Color(255, 220, 60) : new Color(200, 160, 30);
-        g2.setColor(btnColor);
-        g2.fillRect(btnX, btnY, btnSize, btnSize);
-
-        // Highlight atas-kiri (pixel shine)
-        g2.setColor(new Color(255, 255, 200, 160));
-        g2.fillRect(btnX, btnY, btnSize, 3);       // baris atas
-        g2.fillRect(btnX, btnY, 3, btnSize);       // kolom kiri
-
-        // Border tombol (pixel tebal)
-        g2.setColor(new Color(80, 60, 0));
-        g2.setStroke(new BasicStroke(2));
-        g2.drawRect(btnX, btnY, btnSize, btnSize);
-
-        // Huruf E di dalam tombol
-        g2.setFont(new Font("Monospaced", Font.BOLD, 17));
-        FontMetrics fmE = g2.getFontMetrics();
-        int eX = btnX + (btnSize - fmE.stringWidth("E")) / 2;
-        int eY = btnY + (btnSize + fmE.getAscent() - fmE.getDescent()) / 2;
-        // Shadow huruf
-        g2.setColor(new Color(80, 60, 0, 180));
-        g2.drawString("E", eX + 1, eY + 1);
-        // Huruf utama
-        g2.setColor(new Color(40, 30, 0));
-        g2.drawString("E", eX, eY);
-
-        // ---- Teks prompt ----
-        String floorTarget = (tileM.currentFloor == 1) ? "Floor 2" : "Floor 1";
-        String promptText  = "Go to " + floorTarget;
-
-        g2.setFont(new Font("Monospaced", Font.BOLD, 11));
-        FontMetrics fmP = g2.getFontMetrics();
-        int textPromptX = btnX + btnSize + 8;
-        int textPromptY = baseY + 15;
-
-        // Label kecil di atas
-        g2.setColor(new Color(160, 160, 200));
-        g2.drawString("INTERACT", textPromptX, textPromptY);
-
-        // Label lantai tujuan
-        Color promptColor = bright ? new Color(255, 240, 130) : new Color(210, 190, 80);
-        g2.setFont(new Font("Monospaced", Font.BOLD, 12));
-        g2.setColor(promptColor);
-        g2.drawString(promptText, textPromptX, textPromptY + 16);
-
-        // Reset stroke
-        g2.setStroke(new BasicStroke(1));
+        g2.drawImage(btnSprite, btnX, btnY, btnW, btnH, null);
     }
 
     private BufferedImage getHealthImage(float ratio) {
