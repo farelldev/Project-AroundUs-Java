@@ -4,6 +4,7 @@ import combat.Bullet;
 import entity.Player;
 import entity.Zombie;
 import item.Chest;
+import item.ExplosiveBarrel;
 import tiles.TileManager;
 
 import javax.imageio.ImageIO;
@@ -37,6 +38,7 @@ public class GamePanel extends JPanel implements Runnable {
     Thread gameThread;
     public ArrayList<Chest> chests = new ArrayList<>();
     public ArrayList<item.Items> droppedItems = new ArrayList<>();
+    public final ArrayList<ExplosiveBarrel> barrels = new ArrayList<>();
     public TileManager    tileM    = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
     public LevelManager   levelM   = new LevelManager(this);
@@ -223,6 +225,16 @@ public class GamePanel extends JPanel implements Runnable {
 
         ArrayList<Zombie> activeZombies = getActiveZombies();
 
+        Iterator<item.ExplosiveBarrel> barrelIt = barrels.iterator();
+        while (barrelIt.hasNext()) {
+            item.ExplosiveBarrel barrel = barrelIt.next();
+            if (barrel.isDestroyed) {
+                barrelIt.remove(); // Hapus tong yang asapnya udah hilang
+                continue;
+            }
+            barrel.update();
+        }
+
         Iterator<Bullet> bIt = bullets.iterator();
         while (bIt.hasNext()) {
             Bullet b = bIt.next();
@@ -230,9 +242,10 @@ public class GamePanel extends JPanel implements Runnable {
             b.update();
 
             if (b.isActive()) {
+                Rectangle bulletBounds = new Rectangle((int)b.getBounds().x, (int)b.getBounds().y, 8, 8);
+
                 for (Zombie z : activeZombies) {
                     if (!z.isDead()) {
-                        Rectangle bulletBounds = new Rectangle(b.x, b.y, 8, 8);
                         Rectangle zombieBounds = new Rectangle(
                                 z.x + z.solidArea.x,
                                 z.y + z.solidArea.y,
@@ -242,6 +255,17 @@ public class GamePanel extends JPanel implements Runnable {
                         if (bulletBounds.intersects(zombieBounds)) {
                             b.hit(z);
                             break;
+                        }
+                    }
+                }
+
+                if (b.isActive()) { // Pastikan peluru blm hancur kena zombie
+                    for (item.ExplosiveBarrel barrel : barrels) {
+                        if (!barrel.isExploding && !barrel.isDestroyed) {
+                            if (bulletBounds.intersects(barrel.solidArea)) {
+                                b.hit(barrel); // Peluru hancur, HP tong berkurang
+                                break;
+                            }
                         }
                     }
                 }
@@ -318,6 +342,7 @@ public class GamePanel extends JPanel implements Runnable {
         tileM.draw(g2);
         for (Chest c : chests) { c.draw(g2); }
         for (item.Items item : droppedItems) { item.draw(g2, this); }
+        for (item.ExplosiveBarrel barrel : barrels) { barrel.draw(g2); }
         for (Zombie z : getActiveZombies()) { z.draw(g2); }
         player.draw(g2);
         for (Bullet b : bullets) { b.draw(g2, this); }

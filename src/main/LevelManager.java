@@ -22,6 +22,7 @@ public class LevelManager {
         this.gp = gp;
         // Spawn peti pertama kali saat game dimulai (Level 1)
         spawnChests();
+        spawnBarrels();
     }
 
     public void update() {
@@ -120,6 +121,35 @@ public class LevelManager {
         }
     }
 
+    private void spawnBarrels() {
+        // Bersihkan tong yang belum meledak dari wave sebelumnya
+        gp.barrels.clear();
+
+        // Rumus jumlah: Wave 1-3 = 3, Wave 4-6 = 6, Wave 7-9 = 9
+        int barrelCount = ((currentLevel - 1) / 3 + 1) * 3;
+
+        for (int i = 0; i < barrelCount; i++) {
+            boolean validTile = false;
+            int randCol = 0, randRow = 0;
+
+            // Cari area lantai kosong yang sama seperti Chest
+            while (!validTile) {
+                randCol = random.nextInt(gp.maxWorldCol);
+                randRow = random.nextInt(gp.maxWorldRow);
+                int tileNum = gp.tileM.mapTileNum[randCol][randRow];
+
+                if (tileNum != -1 && !gp.tileM.tile[tileNum].collision && tileNum != 0 && tileNum != 16 && tileNum != 57) {
+                    validTile = true;
+                }
+            }
+
+            int spawnX = randCol * gp.tileSize;
+            int spawnY = randRow * gp.tileSize;
+            gp.barrels.add(new item.ExplosiveBarrel(gp, spawnX, spawnY));
+        }
+    }
+
+
     private void levelUp() {
         currentLevel++;
         zombiesSpawnedThisLevel = 0;
@@ -129,5 +159,6 @@ public class LevelManager {
 
         // Panggil peti di wave baru
         spawnChests();
+        spawnBarrels();
     }
 }
