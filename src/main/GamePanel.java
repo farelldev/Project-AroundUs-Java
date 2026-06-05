@@ -22,7 +22,7 @@ public class GamePanel extends JPanel implements Runnable {
     public final int tileSize     = originalTileSize * scale;
     public final int maxscreenCol = 16;
     public final int maxscreenRow = 12;
-    public final int screenWidht  = tileSize * maxscreenCol;
+    public final int screenWidht  = tileSize * maxscreenCol; // Tetap pakai ejaan ini agar tidak error di class lain
     public final int screenHeight = tileSize * maxscreenRow;
 
     // WORLD SETTINGS
@@ -46,8 +46,7 @@ public class GamePanel extends JPanel implements Runnable {
     public final ArrayList<Zombie> zombiesFloor1 = new ArrayList<>();
     public final ArrayList<Zombie> zombiesFloor2 = new ArrayList<>();
 
-    // Floor aktif saat ini (1 atau 2) — JANGAN simpan referensi list langsung
-    // karena reassign di tengah iterasi menyebabkan ConcurrentModificationException
+    // Floor aktif saat ini (1 atau 2)
     public int activeFloor = 1;
 
     // Convenience: selalu akses via getZombies() agar aman
@@ -55,12 +54,21 @@ public class GamePanel extends JPanel implements Runnable {
 
     public ArrayList<Chest> chests = new ArrayList<>();
 
-    // Flag pindah floor — diproses SETELAH update loop selesai, bukan di tengahnya
+    // Flag pindah floor
     private boolean pendingFloorSwitch = false;
     private int     pendingFloor       = -1;
 
-    // Health bar images
+    // Flag deteksi tangga — di-set oleh CollisionCheck, di-reset setiap update
+    public boolean nearStair    = false;
+    public int     nearStairCol = -1;
+    public int     nearStairRow = -1;
+
+    // UI Images
     private BufferedImage hpImg100, hpImg75, hpImg50, hpImg25, hpImg10;
+    private BufferedImage zombieCounterBG; // <-- VARIABEL BARU UNTUK BG ZOMBIE
+    private BufferedImage buttonESprite1, buttonESprite2;
+    private int buttonAnimCounter = 0;
+    private int buttonAnimFrame   = 0; // 0 = sprite1, 1 = sprite2
 
     // Courier Prime fonts
     private Font cpRegular, cpBold, cpItalic, cpBoldItalic;
@@ -77,6 +85,7 @@ public class GamePanel extends JPanel implements Runnable {
         this.setFocusable(true);
 
         loadHealthImages();
+        loadUIImages(); // <-- PANGGIL METHOD LOAD GAMBAR UI DISINI
         loadFonts();
     }
 
@@ -84,10 +93,10 @@ public class GamePanel extends JPanel implements Runnable {
         try {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
-            InputStream isReg  = getClass().getResourceAsStream("/fonts/CourierPrime-Regular.ttf");
-            InputStream isBold = getClass().getResourceAsStream("/fonts/CourierPrime-Bold.ttf");
-            InputStream isItal = getClass().getResourceAsStream("/fonts/CourierPrime-Italic.ttf");
-            InputStream isBoldItal = getClass().getResourceAsStream("/fonts/CourierPrime-BoldItalic.ttf");
+            InputStream isReg  = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
+            InputStream isBold = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
+            InputStream isItal = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
+            InputStream isBoldItal = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
 
             Font baseReg      = Font.createFont(Font.TRUETYPE_FONT, isReg);
             Font baseBold     = Font.createFont(Font.TRUETYPE_FONT, isBold);
@@ -127,21 +136,30 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
-    /** Kembalikan list zombie floor yang sedang aktif */
+    // <-- METHOD BARU UNTUK LOAD GAMBAR UI LAINNYA
+    private void loadUIImages() {
+        try {
+            zombieCounterBG = ImageIO.read(getClass().getResourceAsStream("/uiGraphics/zombieCounterBG.png"));
+            buttonESprite1  = ImageIO.read(getClass().getResourceAsStream("/uiGraphics/button/buttonE_sprite1.png"));
+            buttonESprite2  = ImageIO.read(getClass().getResourceAsStream("/uiGraphics/button/buttonE_sprite2.png"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("[GamePanel] Gagal memuat UI zombieCounterBG.png!");
+        }
+    }
+
     public ArrayList<Zombie> getActiveZombies() {
         return activeFloor == 1 ? zombiesFloor1 : zombiesFloor2;
     }
 
-    /** Dipanggil oleh TileManager — tandai perpindahan floor, eksekusi setelah update loop */
     public void requestFloorSwitch(int toFloor) {
         pendingFloorSwitch = true;
         pendingFloor       = toFloor;
     }
 
-    /** Eksekusi perpindahan floor secara aman (di luar loop iterasi zombie) */
     private void applyFloorSwitch() {
         activeFloor = pendingFloor;
-        zombies     = getActiveZombies(); // sync referensi legacy
+        zombies     = getActiveZombies();
         pendingFloorSwitch = false;
         System.out.println("[GamePanel] Pindah ke Floor " + activeFloor
                 + " — zombie di floor ini: " + getActiveZombies().size());
@@ -180,19 +198,25 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     public void update() {
+        // Reset deteksi tangga setiap frame — CollisionCheck akan set ulang jika masih dekat
+        nearStair    = false;
+        nearStairCol = -1;
+        nearStairRow = -1;
+
+        // Cek tangga setiap frame (termasuk saat player diam)
+        cChecker.checkNearStair();
+
         player.update();
         levelM.update();
 
         ArrayList<Zombie> activeZombies = getActiveZombies();
 
-        // Update & bersihkan bullet
         Iterator<Bullet> bIt = bullets.iterator();
         while (bIt.hasNext()) {
             Bullet b = bIt.next();
             if (!b.isActive()) { bIt.remove(); continue; }
             b.update();
 
-            // Cek hit ke zombie floor aktif
             if (b.isActive()) {
                 for (Zombie z : activeZombies) {
                     if (!z.isDead()) {
@@ -212,7 +236,6 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
-        // Update & bersihkan zombie floor aktif
         Iterator<Zombie> zIt = activeZombies.iterator();
         while (zIt.hasNext()) {
             Zombie z = zIt.next();
@@ -222,9 +245,26 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
-        // *** Terapkan floor switch SETELAH semua iterasi selesai ***
         if (pendingFloorSwitch) {
             applyFloorSwitch();
+        }
+
+        // Cek tombol E untuk naik/turun tangga
+        if (nearStair && keyH.ePressed) {
+            tileM.switchFloor(nearStairCol, nearStairRow);
+            keyH.ePressed = false; // konsumsi satu kali tekan
+        }
+
+        // Animasi sprite tombol E
+        if (nearStair) {
+            buttonAnimCounter++;
+            if (buttonAnimCounter >= 30) {
+                buttonAnimFrame   = (buttonAnimFrame == 0) ? 1 : 0;
+                buttonAnimCounter = 0;
+            }
+        } else {
+            buttonAnimCounter = 0;
+            buttonAnimFrame   = 0;
         }
     }
 
@@ -235,23 +275,11 @@ public class GamePanel extends JPanel implements Runnable {
 
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // 1. Tile / Map
         tileM.draw(g2);
-
-        // 2. Zombie floor aktif
-        for (Zombie z : getActiveZombies()) {
-            z.draw(g2);
-        }
-
-        // 3. Player
+        for (Zombie z : getActiveZombies()) { z.draw(g2); }
         player.draw(g2);
+        for (Bullet b : bullets) { b.draw(g2, this); }
 
-        // 4. Bullet
-        for (Bullet b : bullets) {
-            b.draw(g2, this);
-        }
-
-        // 5. HUD
         drawHUD(g2);
 
         g2.dispose();
@@ -260,9 +288,7 @@ public class GamePanel extends JPanel implements Runnable {
     private void drawHUD(Graphics2D g2) {
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // ----------------------------------------------------------------
-        // HEALTH BAR — gambar 1:1, dipilih berdasarkan % HP
-        // ----------------------------------------------------------------
+        // ---- HEALTH BAR ----
         float hpRatio = (float) player.getHp() / player.getMaxHp();
         BufferedImage hpImg = getHealthImage(hpRatio);
 
@@ -273,7 +299,7 @@ public class GamePanel extends JPanel implements Runnable {
             g2.drawImage(hpImg, imgX, imgY, imgSize, imgSize, null);
         }
 
-        // ---- AMMO — pojok kanan bawah, Bold untuk angka, Italic untuk label ----
+        // ---- AMMO ----
         int ammo    = player.getWeapon().getAmmo();
         int maxAmmo = player.getWeapon().getMaxAmmo();
         boolean reloading = player.getWeapon().isReloading();
@@ -284,22 +310,19 @@ public class GamePanel extends JPanel implements Runnable {
         g2.fillRoundRect(ammoBgX, ammoBgY, 140, 26, 8, 8);
 
         if (reloading) {
-            // "reloading..." pakai BoldItalic + warna kuning
             g2.setFont(cpBoldItalic);
             g2.setColor(new Color(255, 210, 50));
             g2.drawString("reloading...", ammoBgX + 8, ammoBgY + 18);
         } else {
-            // Label "AMMO" pakai Italic kecil abu-abu
             g2.setFont(cpItalic);
             g2.setColor(new Color(180, 180, 180));
             g2.drawString("AMMO", ammoBgX + 8, ammoBgY + 14);
-            // Angka pakai Bold putih
             g2.setFont(cpBold);
             g2.setColor(Color.WHITE);
             g2.drawString(ammo + " / " + maxAmmo, ammoBgX + 52, ammoBgY + 19);
         }
 
-        // ---- LEVEL — pojok kiri atas, label Italic + angka Bold ----
+        // ---- LEVEL ----
         g2.setColor(new Color(0, 0, 0, 160));
         g2.fillRoundRect(10, 10, 110, 24, 8, 8);
         g2.setFont(cpItalic);
@@ -309,7 +332,7 @@ public class GamePanel extends JPanel implements Runnable {
         g2.setColor(new Color(255, 230, 50));
         g2.drawString(String.valueOf(levelM.currentLevel), 52, 24);
 
-        // ---- FLOOR — di bawah Level, label Regular + angka Bold ----
+        // ---- FLOOR ----
         g2.setColor(new Color(0, 0, 0, 160));
         g2.fillRoundRect(10, 38, 110, 24, 8, 8);
         g2.setFont(cpItalic);
@@ -319,7 +342,8 @@ public class GamePanel extends JPanel implements Runnable {
         g2.setColor(new Color(150, 210, 255));
         g2.drawString(String.valueOf(tileM.currentFloor), 76, 52);
 
-        // ---- ZOMBIE COUNTER — tengah atas, BoldItalic merah ----
+        // ---- ZOMBIE COUNTER (UPDATED DENGAN GAMBAR BG) ----
+        // ---- ZOMBIE COUNTER ----
         long aliveF1 = zombiesFloor1.stream().filter(z -> !z.isDead()).count();
         long aliveF2 = zombiesFloor2.stream().filter(z -> !z.isDead()).count();
         long total   = aliveF1 + aliveF2;
@@ -329,20 +353,56 @@ public class GamePanel extends JPanel implements Runnable {
         FontMetrics fmz = g2.getFontMetrics();
         int zW = fmz.stringWidth(zombieStr);
 
-        g2.setColor(new Color(0, 0, 0, 160));
-        g2.fillRoundRect(screenWidht / 2 - zW / 2 - 6, 8, zW + 12, 22, 8, 8);
+        // Ukuran dan posisi background
+        int bgWidth = zW + 24;
+        int bgHeight = 32;
+        int bgX = (screenWidht / 2) - (bgWidth / 2);
+        int bgY = 4;
+
+        // Gambar background
+        if (zombieCounterBG != null) {
+            g2.drawImage(zombieCounterBG, bgX, bgY, bgWidth, bgHeight, null);
+        } else {
+            g2.setColor(new Color(0, 0, 0, 160));
+            g2.fillRoundRect(bgX, bgY, bgWidth, bgHeight, 8, 8);
+        }
+
+        // Posisi teks (Otomatis presisi di tengah background)
+        int textX = (screenWidht / 2) - (zW / 2);
+        int textY = bgY + ((bgHeight - fmz.getHeight()) / 2) + fmz.getAscent();
+
+        // Tulis teksnya
         g2.setColor(new Color(230, 80, 80));
-        g2.drawString(zombieStr, screenWidht / 2 - zW / 2, 24);
+        g2.drawString(zombieStr, textX, textY);
+
+        // ---- STAIR INTERACTION PROMPT (muncul saat dekat tangga) ----
+        if (nearStair) {
+            drawStairPrompt(g2);
+        }
     }
 
-    /**
-     * Pilih gambar health bar berdasarkan % HP:
-     *   > 75%  → 100percent.png
-     *   > 50%  → 75percent.png
-     *   > 25%  → 50percent.png
-     *   > 10%  → 25percent.png
-     *   ≤ 10%  → 10percent.png
-     */
+    private void drawStairPrompt(Graphics2D g2) {
+        // Konversi posisi tangga dari world coords ke screen coords
+        int stairWorldX = nearStairCol * tileSize;
+        int stairWorldY = nearStairRow * tileSize;
+        int stairScreenX = stairWorldX - player.x + player.screenX;
+        int stairScreenY = stairWorldY - player.y + player.screenY;
+
+        // Pilih sprite berdasarkan frame animasi
+        BufferedImage btnSprite = (buttonAnimFrame == 0) ? buttonESprite1 : buttonESprite2;
+        if (btnSprite == null) return;
+
+        int btnW = 20;
+        int btnH = 20;
+
+        // Posisi di tengah atas tile tangga
+        int btnX = stairScreenX + (tileSize / 2) - (btnW / 2);
+        // Sprite2 turun sedikit untuk efek "klik"
+        int btnY = stairScreenY - btnH - 6 + (buttonAnimFrame == 1 ? 4 : 0);
+
+        g2.drawImage(btnSprite, btnX, btnY, btnW, btnH, null);
+    }
+
     private BufferedImage getHealthImage(float ratio) {
         if (ratio > 0.75f) return hpImg100;
         if (ratio > 0.50f) return hpImg75;
