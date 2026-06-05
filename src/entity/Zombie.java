@@ -146,10 +146,12 @@ public class Zombie extends Character {
 
         BufferedImage img = getFrameImage();
 
-        // Flip horizontal jika zombie menghadap kiri
+        // Flip horizontal jika zombie menghadap kanan (karena sprite default menghadap kiri)
         if (img != null) {
             java.awt.geom.AffineTransform old = g2.getTransform();
-            if (direction.equals("left")) {
+
+            // Ubah "left" menjadi "right" di baris ini
+            if (direction.equals("right")) {
                 g2.translate(screenX + gp.tileSize, screenY);
                 g2.scale(-1, 1);
                 g2.drawImage(img, 0, 0, gp.tileSize, gp.tileSize, null);

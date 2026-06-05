@@ -71,7 +71,30 @@ public class CollisionCheck {
         if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) return;
         int num = gp.tileM.mapTileNum[col][row];
         if (num == 16 || num == 57) {
-            gp.tileM.switchFloor(col, row);
+            gp.nearStair     = true;
+            gp.nearStairCol  = col;
+            gp.nearStairRow  = row;
         }
+    }
+
+    // Cek tangga setiap frame tanpa bergantung pada movement player
+    public void checkNearStair() {
+        Entity entity = gp.getPlayer();
+
+        int leftX   = entity.x + entity.solidArea.x;
+        int rightX  = entity.x + entity.solidArea.x + entity.solidArea.width;
+        int topY    = entity.y + entity.solidArea.y;
+        int bottomY = entity.y + entity.solidArea.y + entity.solidArea.height;
+
+        int leftCol   = leftX  / gp.tileSize;
+        int rightCol  = rightX / gp.tileSize;
+        int topRow    = topY   / gp.tileSize;
+        int bottomRow = bottomY / gp.tileSize;
+
+        // Cek semua 4 sudut hitbox player
+        checkStair(entity, leftCol,  topRow);
+        checkStair(entity, rightCol, topRow);
+        checkStair(entity, leftCol,  bottomRow);
+        checkStair(entity, rightCol, bottomRow);
     }
 }

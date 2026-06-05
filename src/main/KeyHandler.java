@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class KeyHandler implements KeyListener, MouseMotionListener, MouseListener {
     public int mouseX, mouseY;
-    public boolean upPressed, downPressed, leftPressed, rightPressed, leftMousePressed, reloadPressed;
+    public boolean upPressed, downPressed, leftPressed, rightPressed, leftMousePressed, reloadPressed, ePressed;
     public ArrayList<String> directionList = new ArrayList<>();
     public KeyHandler() {}
 
@@ -38,6 +38,9 @@ public class KeyHandler implements KeyListener, MouseMotionListener, MouseListen
         if (code == KeyEvent.VK_R) {
             reloadPressed = true;
         }
+        if (code == KeyEvent.VK_E) {
+            ePressed = true;
+        }
     }
 
     @Override
@@ -62,6 +65,9 @@ public class KeyHandler implements KeyListener, MouseMotionListener, MouseListen
         }
         if (code == KeyEvent.VK_R) {
             reloadPressed = false;
+        }
+        if (code == KeyEvent.VK_E) {
+            ePressed = false;
         }
     }
 
