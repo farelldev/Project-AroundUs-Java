@@ -6,7 +6,8 @@ public class Ammo extends Items {
     private int ammoAmount = 30;
 
     public Ammo() {
-        setName("Ammo Box");
+        setName("Ammo");
+        loadImage("ammo");
     }
 
     @Override

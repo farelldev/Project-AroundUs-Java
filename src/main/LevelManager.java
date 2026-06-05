@@ -1,6 +1,7 @@
 package main;
 
 import entity.Zombie;
+import item.Chest;
 import java.util.Random;
 
 public class LevelManager {
@@ -19,6 +20,8 @@ public class LevelManager {
 
     public LevelManager(GamePanel gp) {
         this.gp = gp;
+        // Spawn peti pertama kali saat game dimulai (Level 1)
+        spawnChests();
     }
 
     public void update() {
@@ -33,10 +36,42 @@ public class LevelManager {
             zombiesSpawnedThisLevel++;
         }
 
-        // Naik level: semua target sudah spawn DAN semua zombie di SEMUA floor sudah mati
+        // Naik level
         boolean allDead = gp.zombiesFloor1.isEmpty() && gp.zombiesFloor2.isEmpty();
         if (zombiesSpawnedThisLevel >= maxZombiesPerLevel && allDead) {
             levelUp();
+        }
+    }
+
+    private void spawnChests() {
+        gp.chests.clear();
+
+        // Rumus: Wave 1-2 = 2 Peti, Wave 3-4 = 4 Peti, dst.
+        int chestCount = ((currentLevel + 1) / 2) * 2;
+        System.out.println("[LevelManager] Memunculkan " + chestCount + " peti baru!");
+
+        for (int i = 0; i < chestCount; i++) {
+            boolean validTile = false;
+            int randCol = 0, randRow = 0;
+
+            // Cari ubin aman di dalam bangunan
+            while (!validTile) {
+                randCol = random.nextInt(gp.maxWorldCol);
+                randRow = random.nextInt(gp.maxWorldRow);
+
+                int tileNum = gp.tileM.mapTileNum[randCol][randRow];
+
+                // Syarat aman: BUKAN tembok, BUKAN rumput (0), BUKAN tangga (16/57)
+                if (tileNum != -1 && !gp.tileM.tile[tileNum].collision && tileNum != 0 && tileNum != 16 && tileNum != 57) {
+                    validTile = true;
+                }
+            }
+
+            int spawnX = randCol * gp.tileSize;
+            int spawnY = randRow * gp.tileSize;
+
+            // Masukkan peti ke list GamePanel
+            gp.chests.add(new Chest(gp, spawnX, spawnY));
         }
     }
 
@@ -77,16 +112,12 @@ public class LevelManager {
             if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) continue;
 
             int tileNum = gp.tileM.mapTileNum[col][row];
-            if (gp.tileM.tile[tileNum] == null || gp.tileM.tile[tileNum].collision) continue;
+            if (tileNum == -1 || gp.tileM.tile[tileNum] == null || gp.tileM.tile[tileNum].collision) continue;
 
-            // Spawn hanya di floor aktif — pakai getActiveZombies() agar selalu list yang benar
             Zombie z = new Zombie(gp, spawnX, spawnY, currentLevel);
             gp.getActiveZombies().add(z);
-            System.out.println("[LevelManager] Zombie muncul di Floor " + gp.tileM.currentFloor
-                    + " (" + spawnX + "," + spawnY + ") Level: " + currentLevel);
             return;
         }
-        System.out.println("[LevelManager] Gagal menemukan spawn point yang aman, lewati.");
     }
 
     private void levelUp() {
@@ -95,5 +126,8 @@ public class LevelManager {
         maxZombiesPerLevel += 3;
         if (nextSpawnTime > 30) nextSpawnTime -= 15;
         System.out.println("--- NAIK KE LEVEL " + currentLevel + " ---");
+
+        // Panggil peti di wave baru
+        spawnChests();
     }
 }
