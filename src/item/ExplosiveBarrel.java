@@ -8,39 +8,41 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
+/**
+ * ExplosiveBarrel — tong meledak saat ditembak 3 kali.
+ *
+ * PERUBAHAN:
+ *  - Sound ledakan diputar via GamePanel.soundManager.
+ *  - Sound hit dinding (hit_wall) diputar saat tong kena peluru.
+ */
 public class ExplosiveBarrel implements Damageable {
     GamePanel gp;
     public int x, y;
     public Rectangle solidArea;
 
-    // Asumsi damage peluru = 30. Agar 3 kali tembak meledak, HP = 90.
-    private int hp = 90;
-    public boolean isExploding = false;
-    public boolean isDestroyed = false;
+    private int hp = 90; // 3 tembakan (damage 30 per peluru)
+    public boolean isExploding  = false;
+    public boolean isDestroyed  = false;
+    private boolean soundPlayed = false; // Guard agar sound ledakan cuma sekali
 
-    // Animasi
     private BufferedImage idleImg;
     private BufferedImage[] explodeImgs;
     private int spriteCounter = 0;
-    private int spriteNum = 0;
+    private int spriteNum     = 0;
 
     public ExplosiveBarrel(GamePanel gp, int x, int y) {
         this.gp = gp;
-        this.x = x;
-        this.y = y;
-
-        // Hitbox tong agar bisa ditabrak peluru
+        this.x  = x;
+        this.y  = y;
         this.solidArea = new Rectangle(x, y, gp.tileSize, gp.tileSize);
-
         loadImages();
     }
 
     private void loadImages() {
         try {
-            // Pastikan path dan huruf besarnya sesuai dengan foldermu
             idleImg = ImageIO.read(getClass().getResourceAsStream("/items/barrel/barrel.png"));
 
-            explodeImgs = new BufferedImage[7];
+            explodeImgs    = new BufferedImage[7];
             explodeImgs[0] = ImageIO.read(getClass().getResourceAsStream("/items/barrel/barrel_explode1.png"));
             explodeImgs[1] = ImageIO.read(getClass().getResourceAsStream("/items/barrel/barrel_explode2.png"));
             explodeImgs[2] = ImageIO.read(getClass().getResourceAsStream("/items/barrel/barrel_explode3.png"));
@@ -55,10 +57,10 @@ public class ExplosiveBarrel implements Damageable {
 
     @Override
     public void takeDmg(int dmg) {
-        // Kalau sudah mati atau sedang meledak, kebal dari peluru tambahan
         if (isExploding || isDestroyed) return;
-
         hp -= dmg;
+        // Suara peluru mengenai tong (metal hit)
+        gp.soundManager.playSFX("hit_wall");
         if (hp <= 0) {
             isExploding = true;
             explode();
@@ -66,24 +68,32 @@ public class ExplosiveBarrel implements Damageable {
     }
 
     private void explode() {
-        System.out.println("BBOOMM! Tong meledak!");
+        System.out.println("[Barrel] BBOOMM!");
 
-        // Membuat area ledakan 3x3 Tile (Pusatnya adalah tong ini)
-        int radius = gp.tileSize;
-        Rectangle explosionArea = new Rectangle(x - radius, y - radius, gp.tileSize * 3, gp.tileSize * 3);
-
-        // 1. Berikan damage ke Player jika masuk area
-        Rectangle playerHitbox = new Rectangle(gp.getPlayer().x, gp.getPlayer().y, gp.tileSize, gp.tileSize);
-        if (explosionArea.intersects(playerHitbox)) {
-            gp.getPlayer().takeDmg(30);
-            System.out.println("Kena ledakan sendiri!");
+        // Suara ledakan
+        if (!soundPlayed) {
+            gp.soundManager.playSFX("player_hurt"); // Pakai player_hurt sbg sfx impact ledakan
+            soundPlayed = true;
         }
 
-        // 2. Berikan damage ke semua Zombie yang masuk area
+        int radius          = gp.tileSize;
+        Rectangle blastArea = new Rectangle(x - radius, y - radius, gp.tileSize * 3, gp.tileSize * 3);
+
+        // Damage player
+        Rectangle playerBox = new Rectangle(gp.getPlayer().x, gp.getPlayer().y, gp.tileSize, gp.tileSize);
+        if (blastArea.intersects(playerBox)) {
+            gp.getPlayer().takeDmg(30);
+            gp.soundManager.playSFX("player_hurt");
+            System.out.println("[Barrel] Player kena ledakan!");
+        }
+
+        // Damage zombie (hanya floor aktif)
         for (Zombie z : gp.getActiveZombies()) {
             if (!z.isDead()) {
-                Rectangle zombieHitbox = new Rectangle(z.x + z.solidArea.x, z.y + z.solidArea.y, z.solidArea.width, z.solidArea.height);
-                if (explosionArea.intersects(zombieHitbox)) {
+                Rectangle zombieBox = new Rectangle(
+                        z.x + z.solidArea.x, z.y + z.solidArea.y,
+                        z.solidArea.width,   z.solidArea.height);
+                if (blastArea.intersects(zombieBox)) {
                     z.takeDmg(30);
                 }
             }
@@ -91,31 +101,31 @@ public class ExplosiveBarrel implements Damageable {
     }
 
     public void update() {
-        // Memutar animasi 7 frame berturut-turut lalu hilang
         if (isExploding && !isDestroyed) {
             spriteCounter++;
-            if (spriteCounter > 5) { // Atur kecepatan animasi meledaknya di sini (makin kecil makin cepat)
+            if (spriteCounter > 5) {
                 spriteNum++;
                 spriteCounter = 0;
                 if (spriteNum >= explodeImgs.length) {
-                    isDestroyed = true; // Tandai selesai agar dihapus oleh GamePanel
+                    isDestroyed = true;
                 }
             }
         }
     }
 
     public void draw(Graphics2D g2) {
-        // Rumus kamera
         int screenX = x - gp.getPlayer().x + gp.getPlayer().screenX;
         int screenY = y - gp.getPlayer().y + gp.getPlayer().screenY;
 
         if (!isExploding) {
-            if (idleImg != null) g2.drawImage(idleImg, screenX, screenY, gp.tileSize, gp.tileSize, null);
+            if (idleImg != null)
+                g2.drawImage(idleImg, screenX, screenY, gp.tileSize, gp.tileSize, null);
         } else if (!isDestroyed) {
             if (explodeImgs[spriteNum] != null) {
-                int shakeX = (int) (Math.random() * 4 - 2);
-                int shakeY = (int) (Math.random() * 4 - 2);
-                g2.drawImage(explodeImgs[spriteNum], screenX + shakeX, screenY + shakeY, gp.tileSize, gp.tileSize, null);
+                int shakeX = (int)(Math.random() * 4 - 2);
+                int shakeY = (int)(Math.random() * 4 - 2);
+                g2.drawImage(explodeImgs[spriteNum], screenX + shakeX, screenY + shakeY,
+                        gp.tileSize, gp.tileSize, null);
             }
         }
     }

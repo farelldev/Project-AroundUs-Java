@@ -24,6 +24,7 @@ public class Zombie extends Character {
 
     private int attackCooldown    = 0;
     private static final int MAX_ATTACK_CD = 60;
+    private boolean alertSoundPlayed = false; // Sound zombie_alert sekali per spawn
     private static final float ATTACK_RANGE = 40f;
 
     // Animasi
@@ -253,6 +254,12 @@ public class Zombie extends Character {
 
         state = State.WALK;
 
+        // Suara zombie alert hanya sekali saat pertama kali mengejar player
+        if (!alertSoundPlayed) {
+            gp.soundManager.playSFX("zombie_alert");
+            alertSoundPlayed = true;
+        }
+
         if (distance == 0) return;
 
         // Vektor arah dinormalisasi
@@ -293,6 +300,7 @@ public class Zombie extends Character {
         if (attackCooldown > 0) return;
         player.takeDmg(baseDmg);
         attackCooldown = MAX_ATTACK_CD;
+        gp.soundManager.playSFX("player_hurt");
     }
 
     public void giveRewardXP(Player player) {
