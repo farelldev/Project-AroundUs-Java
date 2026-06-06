@@ -2,6 +2,7 @@ package main;
 
 import entity.Zombie;
 import item.Chest;
+import item.ExplosiveBarrel;
 import java.util.Random;
 
 public class LevelManager {
@@ -12,7 +13,6 @@ public class LevelManager {
 
     int spawnTimer              = 0;
     int nextSpawnTime           = 120;
-
     int zombiesSpawnedThisLevel = 0;
     int maxZombiesPerLevel      = 5;
 
@@ -20,135 +20,106 @@ public class LevelManager {
 
     public LevelManager(GamePanel gp) {
         this.gp = gp;
-        // Spawn peti pertama kali saat game dimulai (Level 1)
-        spawnChests();
-        spawnBarrels();
+        spawnChestsForFloor(1);
+        spawnChestsForFloor(2);
+        spawnBarrelsForFloor(1);
+        spawnBarrelsForFloor(2);
     }
 
     public void update() {
         if (!isLevelActive) return;
-
         spawnTimer++;
-
-        // Spawn zombie di floor aktif
         if (spawnTimer >= nextSpawnTime && zombiesSpawnedThisLevel < maxZombiesPerLevel) {
             spawnZombie();
             spawnTimer = 0;
             zombiesSpawnedThisLevel++;
         }
+        boolean allDead = gp.floor[1].zombies.isEmpty() && gp.floor[2].zombies.isEmpty();
+        if (zombiesSpawnedThisLevel >= maxZombiesPerLevel && allDead) levelUp();
+    }
 
-        // Naik level
-        boolean allDead = gp.zombiesFloor1.isEmpty() && gp.zombiesFloor2.isEmpty();
-        if (zombiesSpawnedThisLevel >= maxZombiesPerLevel && allDead) {
-            levelUp();
+    // ── Spawn chest per lantai ────────────────────────────────────────────────
+
+    private void spawnChestsForFloor(int floorNum) {
+        FloorState fs = gp.floor[floorNum];
+        fs.chests.clear();
+
+        int count = ((currentLevel + 1) / 2) * 2;
+        System.out.println("[LevelManager] Floor " + floorNum + ": spawn " + count + " peti.");
+
+        for (int i = 0; i < count; i++) {
+            int[] pos = findValidTile();
+            if (pos == null) continue;
+            Chest c = new Chest(gp, pos[0] * gp.tileSize, pos[1] * gp.tileSize);
+            if (currentLevel >= 3) c.setLootPool(currentLevel);
+            fs.chests.add(c);
         }
     }
 
-    private void spawnChests() {
-        gp.chests.clear();
+    // ── Spawn barrel per lantai ───────────────────────────────────────────────
 
-        // Rumus: Wave 1-2 = 2 Peti, Wave 3-4 = 4 Peti, dst.
-        int chestCount = ((currentLevel + 1) / 2) * 2;
-        System.out.println("[LevelManager] Memunculkan " + chestCount + " peti baru!");
+    private void spawnBarrelsForFloor(int floorNum) {
+        FloorState fs = gp.floor[floorNum];
+        fs.barrels.clear();
 
-        for (int i = 0; i < chestCount; i++) {
-            boolean validTile = false;
-            int randCol = 0, randRow = 0;
+        int count = ((currentLevel - 1) / 3 + 1) * 3;
+        System.out.println("[LevelManager] Floor " + floorNum + ": spawn " + count + " tong.");
 
-            // Cari ubin aman di dalam bangunan
-            while (!validTile) {
-                randCol = random.nextInt(gp.maxWorldCol);
-                randRow = random.nextInt(gp.maxWorldRow);
+        for (int i = 0; i < count; i++) {
+            int[] pos = findValidTile();
+            if (pos == null) continue;
+            fs.barrels.add(new ExplosiveBarrel(gp, pos[0] * gp.tileSize, pos[1] * gp.tileSize));
+        }
+    }
 
-                int tileNum = gp.tileM.mapTileNum[randCol][randRow];
+    // ── Cari tile valid untuk spawn ───────────────────────────────────────────
 
-                // Syarat aman: BUKAN tembok, BUKAN rumput (0), BUKAN tangga (16/57)
-                if (tileNum != -1 && !gp.tileM.tile[tileNum].collision && tileNum != 0 && tileNum != 16 && tileNum != 57) {
-                    validTile = true;
-                }
+    private int[] findValidTile() {
+        for (int attempt = 0; attempt < 200; attempt++) {
+            int col = random.nextInt(gp.maxWorldCol);
+            int row = random.nextInt(gp.maxWorldRow);
+            if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) continue;
+            int tileNum = gp.tileM.mapTileNum[col][row];
+            if (tileNum != -1
+                    && gp.tileM.tile[tileNum] != null
+                    && !gp.tileM.tile[tileNum].collision
+                    && tileNum != 0 && tileNum != 16 && tileNum != 57
+                    && tileNum != 19 && tileNum != 20 && tileNum != 21
+                    && tileNum != 40 && tileNum != 41) {
+                return new int[]{col, row};
             }
-
-            int spawnX = randCol * gp.tileSize;
-            int spawnY = randRow * gp.tileSize;
-
-            // Masukkan peti ke list GamePanel
-            gp.chests.add(new Chest(gp, spawnX, spawnY));
         }
+        return null;
     }
+
+    // ── Spawn zombie di floor aktif ───────────────────────────────────────────
 
     private void spawnZombie() {
-        int px     = gp.getPlayer().x;
-        int py     = gp.getPlayer().y;
+        int px = gp.getPlayer().x, py = gp.getPlayer().y;
         int margin = gp.tileSize * 10;
 
         for (int attempt = 0; attempt < 20; attempt++) {
             int spawnX, spawnY;
-            int side = random.nextInt(4);
-
-            switch (side) {
-                case 0: // atas
-                    spawnX = px + random.nextInt(gp.screenWidht) - gp.screenWidht / 2;
-                    spawnY = py - margin;
-                    break;
-                case 1: // bawah
-                    spawnX = px + random.nextInt(gp.screenWidht) - gp.screenWidht / 2;
-                    spawnY = py + margin;
-                    break;
-                case 2: // kiri
-                    spawnX = px - margin;
-                    spawnY = py + random.nextInt(gp.screenHeight) - gp.screenHeight / 2;
-                    break;
-                default: // kanan
-                    spawnX = px + margin;
-                    spawnY = py + random.nextInt(gp.screenHeight) - gp.screenHeight / 2;
-                    break;
+            switch (random.nextInt(4)) {
+                case 0: spawnX = px + random.nextInt(gp.screenWidht) - gp.screenWidht / 2; spawnY = py - margin; break;
+                case 1: spawnX = px + random.nextInt(gp.screenWidht) - gp.screenWidht / 2; spawnY = py + margin; break;
+                case 2: spawnX = px - margin; spawnY = py + random.nextInt(gp.screenHeight) - gp.screenHeight / 2; break;
+                default: spawnX = px + margin; spawnY = py + random.nextInt(gp.screenHeight) - gp.screenHeight / 2; break;
             }
-
             spawnX = Math.max(gp.tileSize, Math.min(spawnX, (gp.maxWorldCol - 2) * gp.tileSize));
             spawnY = Math.max(gp.tileSize, Math.min(spawnY, (gp.maxWorldRow - 2) * gp.tileSize));
 
-            int col = spawnX / gp.tileSize;
-            int row = spawnY / gp.tileSize;
-
+            int col = spawnX / gp.tileSize, row = spawnY / gp.tileSize;
             if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) continue;
-
             int tileNum = gp.tileM.mapTileNum[col][row];
             if (tileNum == -1 || gp.tileM.tile[tileNum] == null || gp.tileM.tile[tileNum].collision) continue;
 
-            Zombie z = new Zombie(gp, spawnX, spawnY, currentLevel);
-            gp.getActiveZombies().add(z);
+            gp.getActiveZombies().add(new Zombie(gp, spawnX, spawnY, currentLevel));
             return;
         }
     }
 
-    private void spawnBarrels() {
-        // Bersihkan tong yang belum meledak dari wave sebelumnya
-        gp.barrels.clear();
-
-        // Rumus jumlah: Wave 1-3 = 3, Wave 4-6 = 6, Wave 7-9 = 9
-        int barrelCount = ((currentLevel - 1) / 3 + 1) * 3;
-
-        for (int i = 0; i < barrelCount; i++) {
-            boolean validTile = false;
-            int randCol = 0, randRow = 0;
-
-            // Cari area lantai kosong yang sama seperti Chest
-            while (!validTile) {
-                randCol = random.nextInt(gp.maxWorldCol);
-                randRow = random.nextInt(gp.maxWorldRow);
-                int tileNum = gp.tileM.mapTileNum[randCol][randRow];
-
-                if (tileNum != -1 && !gp.tileM.tile[tileNum].collision && tileNum != 0 && tileNum != 16 && tileNum != 57) {
-                    validTile = true;
-                }
-            }
-
-            int spawnX = randCol * gp.tileSize;
-            int spawnY = randRow * gp.tileSize;
-            gp.barrels.add(new item.ExplosiveBarrel(gp, spawnX, spawnY));
-        }
-    }
-
+    // ── Level up ──────────────────────────────────────────────────────────────
 
     private void levelUp() {
         currentLevel++;
@@ -157,8 +128,9 @@ public class LevelManager {
         if (nextSpawnTime > 30) nextSpawnTime -= 15;
         System.out.println("--- NAIK KE LEVEL " + currentLevel + " ---");
 
-        // Panggil peti di wave baru
-        spawnChests();
-        spawnBarrels();
+        spawnChestsForFloor(1);
+        spawnChestsForFloor(2);
+        spawnBarrelsForFloor(1);
+        spawnBarrelsForFloor(2);
     }
 }

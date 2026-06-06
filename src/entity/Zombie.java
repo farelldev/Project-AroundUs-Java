@@ -24,6 +24,7 @@ public class Zombie extends Character {
 
     private int attackCooldown    = 0;
     private static final int MAX_ATTACK_CD = 60;
+    private boolean alertSoundPlayed = false; // Sound zombie_alert sekali per spawn
     private static final float ATTACK_RANGE = 40f;
 
     // Animasi
@@ -89,6 +90,9 @@ public class Zombie extends Character {
     @Override
     public void takeDmg(int dmg) {
         if (state == State.DEAD) return;
+
+        // Pastikan zombie tidak stuck di dalam tile collision
+        gp.cChecker.pushOutOfCollision(this);
         super.takeDmg(dmg);
         if (hp <= 0) {
             state = State.DEAD;
@@ -122,7 +126,7 @@ public class Zombie extends Character {
             drop.y = this.y + (gp.tileSize / 4); // Geser dikit ke bawah biar gak terlalu ketutupan mayat
 
             // Masukkan ke keranjang drop di GamePanel
-            gp.droppedItems.add(drop);
+            gp.getActiveDropped().add(drop);
             System.out.println("[Zombie] Mati dan menjatuhkan " + drop.name + "!");
         }
     }
@@ -253,6 +257,15 @@ public class Zombie extends Character {
 
         state = State.WALK;
 
+        // Suara zombie alert hanya sekali saat pertama kali mengejar player
+        if (!alertSoundPlayed) {
+            // 15% chance suara zombie alert agar tidak berisik saat banyak zombie
+            if (new java.util.Random().nextInt(100) < 15) {
+                gp.soundManager.playSFXQuiet("zombie_alert", 0.25f);
+            }
+            alertSoundPlayed = true;
+        }
+
         if (distance == 0) return;
 
         // Vektor arah dinormalisasi
@@ -293,6 +306,13 @@ public class Zombie extends Character {
         if (attackCooldown > 0) return;
         player.takeDmg(baseDmg);
         attackCooldown = MAX_ATTACK_CD;
+        gp.soundManager.playSFX("player_hurt");
+    }
+
+    /** Sinkronisasi preciseX/Y dari x/y — dipanggil setelah pushback */
+    public void syncPrecise() {
+        this.preciseX = this.x;
+        this.preciseY = this.y;
     }
 
     public void giveRewardXP(Player player) {

@@ -66,6 +66,46 @@ public class CollisionCheck {
         }
     }
 
+    /**
+     * Paksa entity keluar dari tile collision jika sudah terlanjur masuk.
+     * Dipanggil tiap frame untuk zombie agar tidak stuck di dalam tembok.
+     */
+    public void pushOutOfCollision(entity.Entity entity) {
+        // Titik tengah hitbox entity
+        int cx = entity.x + entity.solidArea.x + entity.solidArea.width  / 2;
+        int cy = entity.y + entity.solidArea.y + entity.solidArea.height / 2;
+
+        int col = cx / gp.tileSize;
+        int row = cy / gp.tileSize;
+
+        if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) return;
+
+        if (gp.tileM.isCollision(col, row)) {
+            // Hitung jarak ke tepi terdekat tile dan dorong ke sana
+            int tileLeft   = col * gp.tileSize;
+            int tileRight  = tileLeft + gp.tileSize;
+            int tileTop    = row * gp.tileSize;
+            int tileBottom = tileTop + gp.tileSize;
+
+            int distLeft   = cx - tileLeft;
+            int distRight  = tileRight - cx;
+            int distTop    = cy - tileTop;
+            int distBottom = tileBottom - cy;
+
+            int minDist = Math.min(Math.min(distLeft, distRight), Math.min(distTop, distBottom));
+
+            if (minDist == distLeft)       entity.x -= distLeft   + entity.solidArea.width  / 2 + 1;
+            else if (minDist == distRight) entity.x += distRight  + entity.solidArea.width  / 2 + 1;
+            else if (minDist == distTop)   entity.y -= distTop    + entity.solidArea.height / 2 + 1;
+            else                           entity.y += distBottom + entity.solidArea.height / 2 + 1;
+
+            // Sinkronisasi preciseX/Y jika entity adalah Zombie
+            if (entity instanceof entity.Zombie) {
+                ((entity.Zombie) entity).syncPrecise();
+            }
+        }
+    }
+
     private void checkStair(Entity entity, int col, int row) {
         if (!entity.equals(gp.getPlayer())) return;
         if (col < 0 || col >= gp.maxWorldCol || row < 0 || row >= gp.maxWorldRow) return;

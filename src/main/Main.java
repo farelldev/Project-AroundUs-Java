@@ -1,6 +1,7 @@
 package main;
 
 import ui.MainMenuPanel;
+import ui.SoundManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,7 +18,8 @@ public class Main {
             CardLayout cardLayout = new CardLayout();
             JPanel root = new JPanel(cardLayout);
 
-            GamePanel gamePanel = new GamePanel();
+            SoundManager soundManager = new SoundManager();
+            GamePanel gamePanel = new GamePanel(soundManager);
 
             // MainMenuPanel — akan memanggil callback ini saat animasi flicker selesai
             MainMenuPanel menuPanel = new MainMenuPanel(() -> {
@@ -25,7 +27,7 @@ public class Main {
                 cardLayout.show(root, "GAME");
                 gamePanel.requestFocusInWindow();
                 gamePanel.startGameThread();
-            });
+            }, soundManager);
 
             root.add(menuPanel, "MENU");
             root.add(gamePanel, "GAME");

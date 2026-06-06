@@ -44,7 +44,7 @@ public class MainMenuPanel extends JPanel implements Runnable {
     private BufferedImage imgDeadlamp;     // mainMenu_deadlamp
     private BufferedImage imgAfter;        // mainMenu_after
 
-    // Button sprites  (320×180 asli → kita scale saat draw)
+    // Button sprites  (320x180 asli → kita scale saat draw)
     private BufferedImage btnStartIdle,   btnStartHover,   btnStartClicked;
     private BufferedImage btnSettingsIdle,btnSettingsHover,btnSettingsClicked;
     private BufferedImage btnCreditsIdle, btnCreditsHover, btnCreditsClicked;
@@ -61,24 +61,24 @@ public class MainMenuPanel extends JPanel implements Runnable {
 
     // ── Loading animation ─────────────────────────────────────────────────────
     private int  loadingFrame   = 0;
-    private long loadingTimer   = 0;       // ms sejak frame terakhir berubah
-    private static final int LOADING_FRAME_DELAY = 250; // ms per frame
-    private static final int LOADING_TOTAL_CYCLES = 12; // total frame switches sebelum masuk menu
+    private long loadingTimer   = 0;
+    private static final int LOADING_FRAME_DELAY  = 250;
+    private static final int LOADING_TOTAL_CYCLES = 12;
     private int  loadingCycleCount = 0;
 
     // ── Flicker timing ────────────────────────────────────────────────────────
-    private static final long FLICKER_LAMP_MS = 2000;
+    private static final long FLICKER_LAMP_MS          = 2000;
     private static final long DONE_TO_GAME_FALLBACK_MS = 600;
-    private static final long FLICKER_OFF_DELAY_MS = 350;
-    private static final int FLICKER_PULSE_MS = 120;
-    private long flickerStartTime = 0;
+    private static final long FLICKER_OFF_DELAY_MS     = 350;
+    private static final int  FLICKER_PULSE_MS         = 120;
+    private long flickerStartTime    = 0;
     private long flickerDoneStartTime = 0;
 
     // ── Game launch callback ──────────────────────────────────────────────────
     private Runnable onStartGame;
 
     // ── Game loop ─────────────────────────────────────────────────────────────
-    private Thread loopThread;
+    private Thread  loopThread;
     private boolean running = false;
 
     // ── SFX ───────────────────────────────────────────────────────────────────
@@ -88,8 +88,22 @@ public class MainMenuPanel extends JPanel implements Runnable {
     // ── Timing ───────────────────────────────────────────────────────────────
     private long lastTime;
 
+    // ── SoundManager (diteruskan ke SettingsPanel) ───────────────────────────
+    private SoundManager soundManager;
+
+    // ── Volume master yang disimpan lintas panel ──────────────────────────────
+    private float masterVolume = 1.0f;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  CONSTRUCTOR
+    // ─────────────────────────────────────────────────────────────────────────
     public MainMenuPanel(Runnable onStartGame) {
-        this.onStartGame = onStartGame;
+        this(onStartGame, new SoundManager());
+    }
+
+    public MainMenuPanel(Runnable onStartGame, SoundManager soundManager) {
+        this.onStartGame  = onStartGame;
+        this.soundManager = soundManager != null ? soundManager : new SoundManager();
 
         this.setPreferredSize(new Dimension(SCREEN_W, SCREEN_H));
         this.setBackground(Color.BLACK);
@@ -148,7 +162,6 @@ public class MainMenuPanel extends JPanel implements Runnable {
             try {
                 InputStream is = getClass().getResourceAsStream(resourcePath);
                 if (is == null) continue;
-
                 AudioInputStream audioIn = AudioSystem.getAudioInputStream(is);
                 Clip clip = AudioSystem.getClip();
                 clip.open(audioIn);
@@ -208,13 +221,63 @@ public class MainMenuPanel extends JPanel implements Runnable {
                 if (clickedBtn == BtnId.START && rectStart.contains(mx, my)) {
                     triggerStartFlicker();
                 } else if (clickedBtn == BtnId.SETTINGS && rectSettings.contains(mx, my)) {
-                    System.out.println("[MainMenu] Settings diklik (belum diimplementasi)");
+                    openSettings();
                 } else if (clickedBtn == BtnId.CREDITS && rectCredits.contains(mx, my)) {
                     System.out.println("[MainMenu] Credits diklik (belum diimplementasi)");
                 }
                 clickedBtn = BtnId.NONE;
             }
         });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  SETTINGS
+    // ─────────────────────────────────────────────────────────────────────────
+    private void openSettings() {
+        stopLoop();
+        // Pastikan saat kembali dari Settings, menu langsung tampil (bukan loading ulang)
+        state = MenuState.MENU_IDLE;
+        hoveredBtn = BtnId.NONE;
+        clickedBtn = BtnId.NONE;
+
+        Container parent = getParent();
+        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        if (parent == null && frame == null) return;
+
+        // Pakai array[1] sebagai wrapper agar objek settingsPanel bisa
+        // direferensikan di dalam lambda (Java tidak izinkan local variable
+        // non-effectively-final di dalam lambda).
+        SettingsPanel[] ref = new SettingsPanel[1];
+
+        ref[0] = new SettingsPanel(soundManager, () -> {
+            masterVolume = ref[0].getMasterVolume();
+
+            if (parent != null && parent.getLayout() instanceof CardLayout cardLayout) {
+                cardLayout.show(parent, "MENU");
+                parent.revalidate();
+                parent.repaint();
+            } else if (frame != null) {
+                frame.setContentPane(MainMenuPanel.this);
+                frame.revalidate();
+                frame.repaint();
+            }
+            MainMenuPanel.this.requestFocusInWindow();
+            startLoop();
+        });
+
+        ref[0].setMasterVolume(masterVolume);
+
+        if (parent != null && parent.getLayout() instanceof CardLayout cardLayout) {
+            parent.add(ref[0], "SETTINGS");
+            cardLayout.show(parent, "SETTINGS");
+            parent.revalidate();
+            parent.repaint();
+        } else {
+            frame.setContentPane(ref[0]);
+            frame.revalidate();
+            frame.repaint();
+        }
+        ref[0].requestFocusInWindow();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -234,6 +297,7 @@ public class MainMenuPanel extends JPanel implements Runnable {
             try {
                 if (clip.isRunning()) clip.stop();
                 clip.setFramePosition(0);
+                applyVolumeToClip(clip, soundManager != null ? soundManager.getMasterVolume() : masterVolume);
                 clip.start();
                 System.out.println("[SFX] " + label + " diputar.");
             } catch (Exception e) {
@@ -249,6 +313,14 @@ public class MainMenuPanel extends JPanel implements Runnable {
         if (clip != null && clip.isRunning()) {
             clip.stop();
         }
+    }
+
+    private void applyVolumeToClip(Clip clip, float volume) {
+        if (clip == null || !clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) return;
+        FloatControl fc = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+        float safeVolume = Math.max(0.0001f, Math.min(1.0f, volume));
+        float db = volume <= 0.0f ? fc.getMinimum() : (float) (20.0 * Math.log10(safeVolume));
+        fc.setValue(Math.max(fc.getMinimum(), Math.min(fc.getMaximum(), db)));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -302,7 +374,7 @@ public class MainMenuPanel extends JPanel implements Runnable {
     }
 
     private void updateFlicker() {
-        long now = System.currentTimeMillis();
+        long now     = System.currentTimeMillis();
         long elapsed = now - flickerStartTime;
 
         if (state == MenuState.FLICKER_DEAD && elapsed >= FLICKER_LAMP_MS) {
@@ -314,7 +386,6 @@ public class MainMenuPanel extends JPanel implements Runnable {
 
         if (state == MenuState.FLICKER_ON
                 && now - flickerDoneStartTime >= getClipDurationMs(sfxFlickerDone, DONE_TO_GAME_FALLBACK_MS)) {
-            // SFX selesai → luncurkan game
             stopLoop();
             SwingUtilities.invokeLater(onStartGame);
         }
@@ -346,10 +417,8 @@ public class MainMenuPanel extends JPanel implements Runnable {
     }
 
     private void drawLoading(Graphics2D g2) {
-        // Fill hitam dulu
         g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, SCREEN_W, SCREEN_H);
-
         if (loadingFrames[loadingFrame] != null) {
             g2.drawImage(loadingFrames[loadingFrame], 0, 0, SCREEN_W, SCREEN_H, null);
         }
@@ -379,7 +448,6 @@ public class MainMenuPanel extends JPanel implements Runnable {
         g2.setComposite(oldComposite);
     }
 
-    /** Draw full-screen image, scale to panel size */
     private void drawImage(Graphics2D g2, BufferedImage img) {
         if (img != null) {
             g2.drawImage(img, 0, 0, SCREEN_W, SCREEN_H, null);
@@ -390,19 +458,16 @@ public class MainMenuPanel extends JPanel implements Runnable {
     }
 
     private void drawButtons(Graphics2D g2) {
-        // Button sprite asli 320×180 → kita render lebih kecil agar proporsional
-        // Di screen 768×576, tiga tombol disusun vertikal di tengah bawah
-        int btnW = 192;  // 320 * 0.6
-        int btnH = 108;  // 180 * 0.6
+        int btnW = 192;
+        int btnH = 108;
         int gap  = 6;
 
         int totalH = btnH * 3 + gap * 2;
         int startX = (SCREEN_W - btnW) / 2;
-        int startY = (SCREEN_H - totalH) / 2 + 60; // geser sedikit ke bawah dari tengah
+        int startY = (SCREEN_H - totalH) / 2 + 60;
 
-        // Update rects untuk hit-test
-        rectStart   .setBounds(startX, startY,              btnW, btnH);
-        rectSettings.setBounds(startX, startY + btnH + gap, btnW, btnH);
+        rectStart   .setBounds(startX, startY,                    btnW, btnH);
+        rectSettings.setBounds(startX, startY + btnH + gap,       btnW, btnH);
         rectCredits .setBounds(startX, startY + (btnH + gap) * 2, btnW, btnH);
 
         drawBtn(g2, BtnId.START,    rectStart,    btnStartIdle,    btnStartHover,    btnStartClicked);
@@ -413,9 +478,9 @@ public class MainMenuPanel extends JPanel implements Runnable {
     private void drawBtn(Graphics2D g2, BtnId id, Rectangle rect,
                          BufferedImage idle, BufferedImage hover, BufferedImage clicked) {
         BufferedImage img;
-        if      (clickedBtn == id)   img = clicked != null ? clicked : idle;
-        else if (hoveredBtn == id)   img = hover   != null ? hover   : idle;
-        else                         img = idle;
+        if      (clickedBtn == id) img = clicked != null ? clicked : idle;
+        else if (hoveredBtn == id) img = hover   != null ? hover   : idle;
+        else                       img = idle;
 
         if (img != null) {
             g2.drawImage(img, rect.x, rect.y, rect.width, rect.height, null);
