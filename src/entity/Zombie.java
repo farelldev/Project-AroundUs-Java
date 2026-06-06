@@ -123,7 +123,7 @@ public class Zombie extends Character {
             drop.y = this.y + (gp.tileSize / 4); // Geser dikit ke bawah biar gak terlalu ketutupan mayat
 
             // Masukkan ke keranjang drop di GamePanel
-            gp.droppedItems.add(drop);
+            gp.getActiveDropped().add(drop);
             System.out.println("[Zombie] Mati dan menjatuhkan " + drop.name + "!");
         }
     }

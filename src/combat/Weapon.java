@@ -140,10 +140,13 @@ public class Weapon {
             return new Bullet(gp, muzzleX, muzzleY, angle, damage);
 
         } else {
-            gp.soundManager.playSFX("empty_mag");
-            System.out.println("Klik! Peluru habis.");
-            return null;
+            // Hanya bunyi klik sekali tiap ~0.5 detik saat peluru habis
+            if (shootCooldown <= 0) {
+                gp.soundManager.playSFX("empty_mag");
+                shootCooldown = 30; // 0.5 detik di 60 FPS
+            }
         }
+        return null;
     }
 
     public void update(Player player) {

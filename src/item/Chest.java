@@ -92,7 +92,7 @@ public class Chest {
 
                 content.x = this.x;
                 content.y = this.y + (gp.tileSize / 2f);
-                gp.droppedItems.add(content);
+                gp.getActiveDropped().add(content);
 
                 // Suara buka peti
                 gp.soundManager.playSFX("uiClick");

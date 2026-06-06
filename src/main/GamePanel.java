@@ -5,6 +5,7 @@ import entity.Player;
 import entity.Zombie;
 import item.Chest;
 import item.ExplosiveBarrel;
+import item.Items;
 import tiles.TileManager;
 import ui.SoundManager;
 
@@ -38,71 +39,58 @@ public class GamePanel extends JPanel implements Runnable {
     private KeyHandler keyH = new KeyHandler();
     Thread gameThread;
 
-    // ===== Chest & Barrel TERPISAH per lantai =====
-    public final ArrayList<Chest>           chestsFloor1  = new ArrayList<>();
-    public final ArrayList<Chest>           chestsFloor2  = new ArrayList<>();
-    public final ArrayList<ExplosiveBarrel> barrelsFloor1 = new ArrayList<>();
-    public final ArrayList<ExplosiveBarrel> barrelsFloor2 = new ArrayList<>();
+    // ── FloorState: semua entity per lantai ada di sini ──────────────────────
+    // Index 0 tidak dipakai — gunakan floor[1] dan floor[2] langsung
+    public final FloorState[] floor = new FloorState[] {
+        null,               // index 0 (tidak dipakai)
+        new FloorState(1),  // Lantai 1
+        new FloorState(2)   // Lantai 2
+    };
 
-    /** Dropped items tetap global (item jatuh di mana player berada) */
-    public ArrayList<item.Items> droppedItems = new ArrayList<>();
+    public int activeFloor = 1;
 
+    /** Kembalikan FloorState yang sedang aktif */
+    public FloorState getActiveFloor() {
+        return floor[activeFloor];
+    }
+
+    /** Convenience getters — agar kode lama yang akses langsung tetap compile */
+    public ArrayList<Zombie>          getActiveZombies()  { return getActiveFloor().zombies; }
+    public ArrayList<Chest>           getActiveChests()   { return getActiveFloor().chests; }
+    public ArrayList<ExplosiveBarrel> getActiveBarrels()  { return getActiveFloor().barrels; }
+    public ArrayList<Items>           getActiveDropped()  { return getActiveFloor().droppedItems; }
+    public ArrayList<Bullet>          getActiveBullets()  { return getActiveFloor().bullets; }
+
+    // ── Managers ─────────────────────────────────────────────────────────────
     public TileManager    tileM    = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
     public LevelManager   levelM   = new LevelManager(this);
-
-    /** SoundManager terpusat — dipakai oleh semua class */
     public final SoundManager soundManager = new SoundManager();
 
     Player player = new Player(this, this.keyH);
-    public ArrayList<Bullet> bullets = new ArrayList<>();
 
-    // Zombie per floor
-    public final ArrayList<Zombie> zombiesFloor1 = new ArrayList<>();
-    public final ArrayList<Zombie> zombiesFloor2 = new ArrayList<>();
-
-    public int activeFloor = 1;
-    public ArrayList<Zombie> zombies = zombiesFloor1; // legacy compat
-
-    // Flag pindah floor
+    // ── Flag pindah floor ─────────────────────────────────────────────────────
     private boolean pendingFloorSwitch = false;
     private int     pendingFloor       = -1;
 
-    // Flag deteksi tangga
+    // ── Flag deteksi tangga ───────────────────────────────────────────────────
     public boolean nearStair    = false;
     public int     nearStairCol = -1;
     public int     nearStairRow = -1;
 
-    // Deteksi chest
-    private BufferedImage buttonFSprite1, buttonFSprite2;
-    public boolean nearChest  = false;
+    // ── Deteksi chest ─────────────────────────────────────────────────────────
+    public boolean nearChest   = false;
     public Chest   activeChest = null;
 
-    // UI Images
+    // ── UI Images ─────────────────────────────────────────────────────────────
     private BufferedImage hpImg100, hpImg75, hpImg50, hpImg25, hpImg10;
     private BufferedImage zombieCounterBG;
     private BufferedImage buttonESprite1, buttonESprite2;
+    private BufferedImage buttonFSprite1, buttonFSprite2;
     private int buttonAnimCounter = 0;
     private int buttonAnimFrame   = 0;
 
-    // Fonts
     private Font cpRegular, cpBold, cpItalic, cpBoldItalic;
-
-    // ===== Compat helpers untuk LevelManager =====
-    /** Chest aktif di floor yang sedang aktif */
-    public ArrayList<Chest> getActiveChests() {
-        return activeFloor == 1 ? chestsFloor1 : chestsFloor2;
-    }
-    /** Barrel aktif di floor yang sedang aktif */
-    public ArrayList<ExplosiveBarrel> getActiveBarrels() {
-        return activeFloor == 1 ? barrelsFloor1 : barrelsFloor2;
-    }
-
-    // Legacy field — tidak dipakai tapi tetap ada agar tidak error compile lama
-    /** @deprecated Gunakan getActiveChests() */
-    @Deprecated public ArrayList<Chest>           chests  = chestsFloor1;
-    /** @deprecated Gunakan getActiveBarrels() */
-    @Deprecated public final ArrayList<ExplosiveBarrel> barrels = barrelsFloor1;
 
     public KeyHandler getKeyH() { return keyH; }
 
@@ -119,9 +107,10 @@ public class GamePanel extends JPanel implements Runnable {
         loadUIImages();
         loadFonts();
 
-        // Mainkan BGM intro saat game mulai
         soundManager.playBGM("beforePlay");
     }
+
+    // ── Loader ────────────────────────────────────────────────────────────────
 
     private void loadFonts() {
         try {
@@ -129,10 +118,10 @@ public class GamePanel extends JPanel implements Runnable {
             InputStream isReg = getClass().getResourceAsStream("/fonts/NineByFiveNbp-MypB.ttf");
             Font base = Font.createFont(Font.TRUETYPE_FONT, isReg);
             ge.registerFont(base);
-            cpRegular    = base.deriveFont(Font.PLAIN,  12f);
-            cpBold       = base.deriveFont(Font.PLAIN,  13f);
-            cpItalic     = base.deriveFont(Font.PLAIN,  11f);
-            cpBoldItalic = base.deriveFont(Font.PLAIN,  13f);
+            cpRegular    = base.deriveFont(Font.PLAIN, 12f);
+            cpBold       = base.deriveFont(Font.PLAIN, 13f);
+            cpItalic     = base.deriveFont(Font.PLAIN, 11f);
+            cpBoldItalic = base.deriveFont(Font.PLAIN, 13f);
         } catch (Exception e) {
             cpRegular    = new Font("Monospaced", Font.PLAIN,  12);
             cpBold       = new Font("Monospaced", Font.BOLD,   13);
@@ -165,9 +154,7 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
-    public ArrayList<Zombie> getActiveZombies() {
-        return activeFloor == 1 ? zombiesFloor1 : zombiesFloor2;
-    }
+    // ── Floor switch ──────────────────────────────────────────────────────────
 
     public void requestFloorSwitch(int toFloor) {
         pendingFloorSwitch = true;
@@ -176,13 +163,16 @@ public class GamePanel extends JPanel implements Runnable {
 
     private void applyFloorSwitch() {
         activeFloor = pendingFloor;
-        zombies     = getActiveZombies();
         pendingFloorSwitch = false;
+        FloorState fs = getActiveFloor();
         System.out.println("[GamePanel] Pindah ke Floor " + activeFloor
-                + " — zombie: " + getActiveZombies().size()
-                + " | chest: " + getActiveChests().size()
-                + " | barrel: " + getActiveBarrels().size());
+                + " — zombie: " + fs.zombies.size()
+                + " | chest: "  + fs.chests.size()
+                + " | barrel: " + fs.barrels.size()
+                + " | loot: "   + fs.droppedItems.size());
     }
+
+    // ── Game loop ─────────────────────────────────────────────────────────────
 
     public void startGameThread() {
         gameThread = new Thread(this);
@@ -207,14 +197,13 @@ public class GamePanel extends JPanel implements Runnable {
                 repaint();
                 delta--;
             }
-            if (timer >= 1_000_000_000) {
-                timer = 0;
-            }
+            if (timer >= 1_000_000_000) timer = 0;
         }
     }
 
+    // ── Update ────────────────────────────────────────────────────────────────
+
     public void update() {
-        // Reset flag tangga & chest
         nearStair    = false;
         nearStairCol = -1;
         nearStairRow = -1;
@@ -225,18 +214,22 @@ public class GamePanel extends JPanel implements Runnable {
         player.update();
         levelM.update();
 
-        ArrayList<Zombie>           activeZombies = getActiveZombies();
-        ArrayList<ExplosiveBarrel>  activeBarrels = getActiveBarrels();
+        // Ambil snapshot list floor aktif untuk frame ini
+        FloorState          fs            = getActiveFloor();
+        ArrayList<Zombie>          zombies = fs.zombies;
+        ArrayList<ExplosiveBarrel> barrels = fs.barrels;
+        ArrayList<Items>           dropped = fs.droppedItems;
+        ArrayList<Bullet>          bullets = fs.bullets;
 
-        // ===== Update barrel di floor aktif saja =====
-        Iterator<ExplosiveBarrel> barrelIt = activeBarrels.iterator();
+        // ── Update barrels ────────────────────────────────────────────────────
+        Iterator<ExplosiveBarrel> barrelIt = barrels.iterator();
         while (barrelIt.hasNext()) {
-            ExplosiveBarrel barrel = barrelIt.next();
-            if (barrel.isDestroyed) { barrelIt.remove(); continue; }
-            barrel.update();
+            ExplosiveBarrel b = barrelIt.next();
+            if (b.isDestroyed) { barrelIt.remove(); continue; }
+            b.update();
         }
 
-        // ===== Update bullets =====
+        // ── Update & collision bullets ────────────────────────────────────────
         Iterator<Bullet> bIt = bullets.iterator();
         while (bIt.hasNext()) {
             Bullet b = bIt.next();
@@ -244,17 +237,14 @@ public class GamePanel extends JPanel implements Runnable {
             b.update();
 
             if (b.isActive()) {
-                Rectangle bulletBounds = new Rectangle((int)b.getBounds().x, (int)b.getBounds().y, 8, 8);
+                Rectangle bb = new Rectangle((int) b.getBounds().x, (int) b.getBounds().y, 8, 8);
 
-                // Cek tembak zombie
-                for (Zombie z : activeZombies) {
+                // Cek zombie
+                for (Zombie z : zombies) {
                     if (!z.isDead()) {
-                        Rectangle zombieBounds = new Rectangle(
-                                z.x + z.solidArea.x,
-                                z.y + z.solidArea.y,
-                                z.solidArea.width,
-                                z.solidArea.height);
-                        if (bulletBounds.intersects(zombieBounds)) {
+                        Rectangle zb = new Rectangle(z.x + z.solidArea.x, z.y + z.solidArea.y,
+                                z.solidArea.width, z.solidArea.height);
+                        if (bb.intersects(zb)) {
                             b.hit(z);
                             soundManager.playSFX("flesh_hit");
                             break;
@@ -262,11 +252,11 @@ public class GamePanel extends JPanel implements Runnable {
                     }
                 }
 
-                // Cek tembak barrel (hanya floor aktif)
+                // Cek barrel
                 if (b.isActive()) {
-                    for (ExplosiveBarrel barrel : activeBarrels) {
+                    for (ExplosiveBarrel barrel : barrels) {
                         if (!barrel.isExploding && !barrel.isDestroyed) {
-                            if (bulletBounds.intersects(barrel.solidArea)) {
+                            if (bb.intersects(barrel.solidArea)) {
                                 b.hit(barrel);
                                 break;
                             }
@@ -276,20 +266,20 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
-        // ===== Update zombie =====
-        Iterator<Zombie> zIt = activeZombies.iterator();
+        // ── Update zombies ────────────────────────────────────────────────────
+        Iterator<Zombie> zIt = zombies.iterator();
         while (zIt.hasNext()) {
             Zombie z = zIt.next();
             z.update();
             if (z.isDoneWithDeadAnim()) zIt.remove();
         }
 
-        // ===== Pickup dropped items =====
-        Iterator<item.Items> itemIt = droppedItems.iterator();
+        // ── Pickup dropped items (hanya floor aktif) ──────────────────────────
+        Iterator<Items> itemIt = dropped.iterator();
         while (itemIt.hasNext()) {
-            item.Items itm = itemIt.next();
-            float dx = player.x - itm.x;
-            float dy = player.y - itm.y;
+            Items itm = itemIt.next();
+            float dx   = player.x - itm.x;
+            float dy   = player.y - itm.y;
             double dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < tileSize / 1.5) {
                 itm.use(player);
@@ -298,34 +288,29 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
-        // ===== Terapkan pindah floor =====
-        if (pendingFloorSwitch) {
-            applyFloorSwitch();
-        }
+        // ── Terapkan floor switch ─────────────────────────────────────────────
+        if (pendingFloorSwitch) applyFloorSwitch();
 
-        // ===== Interaksi tangga =====
+        // ── Interaksi tangga ──────────────────────────────────────────────────
         if (nearStair && keyH.ePressed) {
             tileM.switchFloor(nearStairCol, nearStairRow);
             keyH.ePressed = false;
         }
 
-        // ===== Interaksi chest (hanya floor aktif) =====
-        ArrayList<Chest> activeChests = getActiveChests();
-        for (Chest c : activeChests) {
+        // ── Interaksi chest ───────────────────────────────────────────────────
+        for (Chest c : fs.chests) {
             if (!c.isOpened() && c.isPlayerNearby(player)) {
-                nearChest  = true;
+                nearChest   = true;
                 activeChest = c;
-
                 if (keyH.fPressed) {
                     c.open(player, this);
                     keyH.fPressed = false;
-                    soundManager.playSFX("uiClick");
                 }
                 break;
             }
         }
 
-        // ===== Animasi tombol interaksi =====
+        // ── Animasi tombol interaksi ──────────────────────────────────────────
         if (nearStair || nearChest) {
             buttonAnimCounter++;
             if (buttonAnimCounter >= 30) {
@@ -338,41 +323,43 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
+    // ── Render ────────────────────────────────────────────────────────────────
+
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        tileM.draw(g2);
+        FloorState fs = getActiveFloor();
 
-        // Gambar hanya chest & barrel floor aktif
-        for (Chest c : getActiveChests())       { c.draw(g2); }
-        for (item.Items itm : droppedItems)     { itm.draw(g2, this); }
-        for (ExplosiveBarrel barrel : getActiveBarrels()) { barrel.draw(g2); }
-        for (Zombie z : getActiveZombies())     { z.draw(g2); }
+        tileM.draw(g2);
+        for (Chest c           : fs.chests)       c.draw(g2);
+        for (Items itm         : fs.droppedItems) itm.draw(g2, this);
+        for (ExplosiveBarrel b : fs.barrels)       b.draw(g2);
+        for (Zombie z          : fs.zombies)       z.draw(g2);
         player.draw(g2);
-        for (Bullet b : bullets)                { b.draw(g2, this); }
+        for (Bullet b          : fs.bullets)       b.draw(g2, this);
 
         drawHUD(g2);
         g2.dispose();
     }
 
+    // ── HUD ───────────────────────────────────────────────────────────────────
+
     private void drawHUD(Graphics2D g2) {
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // ---- HEALTH BAR ----
+        // Health
         float hpRatio = (float) player.getHp() / player.getMaxHp();
         BufferedImage hpImg = getHealthImage(hpRatio);
-        if (hpImg != null) {
-            g2.drawImage(hpImg, 10, screenHeight - 74, 64, 64, null);
-        }
+        if (hpImg != null) g2.drawImage(hpImg, 10, screenHeight - 74, 64, 64, null);
 
-        // ---- AMMO ----
-        int ammo      = player.getWeapon().getAmmo();
-        int maxAmmo   = player.getWeapon().getMaxAmmo();
+        // Ammo
+        int     ammo      = player.getWeapon().getAmmo();
+        int     maxAmmo   = player.getWeapon().getMaxAmmo();
         boolean reloading = player.getWeapon().isReloading();
-        String weaponLabel = player.getWeapon().getType().name();
+        String  wpnLabel  = player.getWeapon().getType().name();
 
         int ammoBgX = screenWidht - 150;
         int ammoBgY = screenHeight - 36;
@@ -386,89 +373,63 @@ public class GamePanel extends JPanel implements Runnable {
         } else {
             g2.setFont(cpItalic);
             g2.setColor(new Color(180, 180, 180));
-            g2.drawString(weaponLabel, ammoBgX + 8, ammoBgY + 14);
+            g2.drawString(wpnLabel, ammoBgX + 8, ammoBgY + 14);
             g2.setFont(cpBold);
             g2.setColor(Color.WHITE);
             g2.drawString(ammo + " / " + maxAmmo, ammoBgX + 52, ammoBgY + 19);
         }
 
-        // ---- LEVEL ----
+        // Level
         g2.setColor(new Color(0, 0, 0, 160));
         g2.fillRoundRect(10, 10, 110, 24, 8, 8);
-        g2.setFont(cpItalic);
-        g2.setColor(new Color(200, 200, 200));
+        g2.setFont(cpItalic);   g2.setColor(new Color(200, 200, 200));
         g2.drawString("LVL", 18, 24);
-        g2.setFont(cpBold);
-        g2.setColor(new Color(255, 230, 50));
+        g2.setFont(cpBold);     g2.setColor(new Color(255, 230, 50));
         g2.drawString(String.valueOf(levelM.currentLevel), 52, 24);
 
-        // ---- FLOOR ----
+        // Floor
         g2.setColor(new Color(0, 0, 0, 160));
         g2.fillRoundRect(10, 38, 110, 24, 8, 8);
-        g2.setFont(cpItalic);
-        g2.setColor(new Color(200, 200, 200));
+        g2.setFont(cpItalic);   g2.setColor(new Color(200, 200, 200));
         g2.drawString("FLOOR", 18, 52);
-        g2.setFont(cpBold);
-        g2.setColor(new Color(150, 210, 255));
+        g2.setFont(cpBold);     g2.setColor(new Color(150, 210, 255));
         g2.drawString(String.valueOf(tileM.currentFloor), 76, 52);
 
-        // ---- ZOMBIE COUNTER ----
-        long aliveF1 = zombiesFloor1.stream().filter(z -> !z.isDead()).count();
-        long aliveF2 = zombiesFloor2.stream().filter(z -> !z.isDead()).count();
-        long total   = aliveF1 + aliveF2;
-
+        // Zombie counter (total semua lantai)
+        long total = floor[1].zombies.stream().filter(z -> !z.isDead()).count()
+                   + floor[2].zombies.stream().filter(z -> !z.isDead()).count();
         String zombieStr = "[ ZOMBIE: " + total + " ]";
         g2.setFont(cpBoldItalic);
         FontMetrics fmz = g2.getFontMetrics();
         int zW      = fmz.stringWidth(zombieStr);
-        int bgWidth = zW + 24;
-        int bgHeight = 32;
-        int bgX = (screenWidht / 2) - (bgWidth / 2);
-        int bgY = 4;
+        int bgWidth = zW + 24, bgHeight = 32;
+        int bgX = (screenWidht / 2) - (bgWidth / 2), bgY = 4;
 
-        if (zombieCounterBG != null) {
-            g2.drawImage(zombieCounterBG, bgX, bgY, bgWidth, bgHeight, null);
-        } else {
-            g2.setColor(new Color(0, 0, 0, 160));
-            g2.fillRoundRect(bgX, bgY, bgWidth, bgHeight, 8, 8);
-        }
+        if (zombieCounterBG != null) g2.drawImage(zombieCounterBG, bgX, bgY, bgWidth, bgHeight, null);
+        else { g2.setColor(new Color(0, 0, 0, 160)); g2.fillRoundRect(bgX, bgY, bgWidth, bgHeight, 8, 8); }
 
-        int textX = (screenWidht / 2) - (zW / 2);
-        int textY = bgY + ((bgHeight - fmz.getHeight()) / 2) + fmz.getAscent();
         g2.setColor(new Color(230, 80, 80));
-        g2.drawString(zombieStr, textX, textY);
+        g2.drawString(zombieStr, (screenWidht / 2) - (zW / 2),
+                bgY + ((bgHeight - fmz.getHeight()) / 2) + fmz.getAscent());
 
-        // ---- PROMPT ----
         if (nearStair) drawStairPrompt(g2);
         if (nearChest && activeChest != null) drawChestPrompt(g2);
     }
 
     private void drawStairPrompt(Graphics2D g2) {
-        int stairWorldX  = nearStairCol * tileSize;
-        int stairWorldY  = nearStairRow * tileSize;
-        int stairScreenX = stairWorldX - player.x + player.screenX;
-        int stairScreenY = stairWorldY - player.y + player.screenY;
-
-        BufferedImage btnSprite = (buttonAnimFrame == 0) ? buttonESprite1 : buttonESprite2;
-        if (btnSprite == null) return;
-
-        int btnW = 20, btnH = 20;
-        int btnX = stairScreenX + (tileSize / 2) - (btnW / 2);
-        int btnY = stairScreenY - btnH - 6 + (buttonAnimFrame == 1 ? 4 : 0);
-        g2.drawImage(btnSprite, btnX, btnY, btnW, btnH, null);
+        int sx = nearStairCol * tileSize - player.x + player.screenX;
+        int sy = nearStairRow * tileSize - player.y + player.screenY;
+        BufferedImage spr = (buttonAnimFrame == 0) ? buttonESprite1 : buttonESprite2;
+        if (spr == null) return;
+        g2.drawImage(spr, sx + tileSize / 2 - 10, sy - 26 + (buttonAnimFrame == 1 ? 4 : 0), 20, 20, null);
     }
 
     private void drawChestPrompt(Graphics2D g2) {
-        int chestScreenX = (int) activeChest.getX() - player.x + player.screenX;
-        int chestScreenY = (int) activeChest.getY() - player.y + player.screenY;
-
-        BufferedImage btnSprite = (buttonAnimFrame == 0) ? buttonFSprite1 : buttonFSprite2;
-        if (btnSprite == null) return;
-
-        int btnW = 20, btnH = 20;
-        int btnX = chestScreenX + (tileSize / 2) - (btnW / 2);
-        int btnY = chestScreenY - btnH - 6 + (buttonAnimFrame == 1 ? 4 : 0);
-        g2.drawImage(btnSprite, btnX, btnY, btnW, btnH, null);
+        int cx = (int) activeChest.getX() - player.x + player.screenX;
+        int cy = (int) activeChest.getY() - player.y + player.screenY;
+        BufferedImage spr = (buttonAnimFrame == 0) ? buttonFSprite1 : buttonFSprite2;
+        if (spr == null) return;
+        g2.drawImage(spr, cx + tileSize / 2 - 10, cy - 26 + (buttonAnimFrame == 1 ? 4 : 0), 20, 20, null);
     }
 
     private BufferedImage getHealthImage(float ratio) {

@@ -100,6 +100,18 @@ public class ExplosiveBarrel implements Damageable {
         }
     }
 
+    // Skala tiap frame ledakan — ease-out agar natural (cepat awal, melambat di puncak)
+    // Index cocok dengan explodeImgs[]: 0=explode1 ... 5=explode6 ... 6=explodeEnd
+    private static final float[] SPRITE_SCALE = {
+        1.0f,   // explode1 — ukuran normal
+        1.35f,  // explode2 — mulai membesar cepat
+        1.70f,  // explode3
+        2.05f,  // explode4
+        2.30f,  // explode5 — mulai melambat
+        2.45f,  // explode6 — puncak, hampir berhenti
+        1.80f   // explodeEnd — sedikit menyusut saat asap
+    };
+
     public void update() {
         if (isExploding && !isDestroyed) {
             spriteCounter++;
@@ -122,10 +134,22 @@ public class ExplosiveBarrel implements Damageable {
                 g2.drawImage(idleImg, screenX, screenY, gp.tileSize, gp.tileSize, null);
         } else if (!isDestroyed) {
             if (explodeImgs[spriteNum] != null) {
-                int shakeX = (int)(Math.random() * 4 - 2);
-                int shakeY = (int)(Math.random() * 4 - 2);
-                g2.drawImage(explodeImgs[spriteNum], screenX + shakeX, screenY + shakeY,
-                        gp.tileSize, gp.tileSize, null);
+                float scale = (spriteNum < SPRITE_SCALE.length)
+                        ? SPRITE_SCALE[spriteNum]
+                        : SPRITE_SCALE[SPRITE_SCALE.length - 1];
+
+                int drawW = (int)(gp.tileSize * scale);
+                int drawH = (int)(gp.tileSize * scale);
+
+                // Shake hanya di awal ledakan (sprite 0-4), berhenti di puncak
+                int shakeX = (spriteNum < 5) ? (int)(Math.random() * 6 - 3) : 0;
+                int shakeY = (spriteNum < 5) ? (int)(Math.random() * 6 - 3) : 0;
+
+                // Tengahkan gambar ke posisi tong asli
+                int drawX = screenX + (gp.tileSize / 2) - (drawW / 2) + shakeX;
+                int drawY = screenY + (gp.tileSize / 2) - (drawH / 2) + shakeY;
+
+                g2.drawImage(explodeImgs[spriteNum], drawX, drawY, drawW, drawH, null);
             }
         }
     }

@@ -115,7 +115,7 @@ public class Player extends Character {
 
         if (newBullet != null) {
             System.out.println("[Player] Serangan biasa! Dmg: " + baseDmg);
-            gp.bullets.add(newBullet);
+            gp.getActiveBullets().add(newBullet);
         }
     }
 
