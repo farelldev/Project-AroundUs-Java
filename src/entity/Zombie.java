@@ -90,6 +90,9 @@ public class Zombie extends Character {
     @Override
     public void takeDmg(int dmg) {
         if (state == State.DEAD) return;
+
+        // Pastikan zombie tidak stuck di dalam tile collision
+        gp.cChecker.pushOutOfCollision(this);
         super.takeDmg(dmg);
         if (hp <= 0) {
             state = State.DEAD;
@@ -256,7 +259,10 @@ public class Zombie extends Character {
 
         // Suara zombie alert hanya sekali saat pertama kali mengejar player
         if (!alertSoundPlayed) {
-            gp.soundManager.playSFX("zombie_alert");
+            // 15% chance suara zombie alert agar tidak berisik saat banyak zombie
+            if (new java.util.Random().nextInt(100) < 15) {
+                gp.soundManager.playSFXQuiet("zombie_alert", 0.25f);
+            }
             alertSoundPlayed = true;
         }
 
@@ -301,6 +307,12 @@ public class Zombie extends Character {
         player.takeDmg(baseDmg);
         attackCooldown = MAX_ATTACK_CD;
         gp.soundManager.playSFX("player_hurt");
+    }
+
+    /** Sinkronisasi preciseX/Y dari x/y — dipanggil setelah pushback */
+    public void syncPrecise() {
+        this.preciseX = this.x;
+        this.preciseY = this.y;
     }
 
     public void giveRewardXP(Player player) {

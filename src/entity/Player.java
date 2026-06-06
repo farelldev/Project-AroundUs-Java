@@ -105,6 +105,17 @@ public class Player extends Character {
                 "! Ammo sekarang: " + ammo);
     }
 
+    @Override
+    public void takeDmg(int dmg) {
+        if (dmg < 0) return;
+        this.hp = Math.max(0, this.hp - dmg);
+        System.out.printf("[Player] -%d HP  →  HP: %d%n", dmg, this.hp);
+        // Tampilkan bloodstain di layar sesuai damage
+        gp.bloodStain.onPlayerHit(dmg);
+        // Sound player hurt
+        gp.soundManager.playSFX("player_hurt");
+    }
+
     // -- 3 varian attack -----------------------------
     @Override
     public void attack() {

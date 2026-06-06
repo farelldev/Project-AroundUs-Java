@@ -83,7 +83,9 @@ public class LevelManager {
             if (tileNum != -1
                     && gp.tileM.tile[tileNum] != null
                     && !gp.tileM.tile[tileNum].collision
-                    && tileNum != 0 && tileNum != 16 && tileNum != 57) {
+                    && tileNum != 0 && tileNum != 16 && tileNum != 57
+                    && tileNum != 19 && tileNum != 20 && tileNum != 21
+                    && tileNum != 40 && tileNum != 41) {
                 return new int[]{col, row};
             }
         }

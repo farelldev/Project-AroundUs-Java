@@ -65,7 +65,8 @@ public class GamePanel extends JPanel implements Runnable {
     public TileManager    tileM    = new TileManager(this);
     public CollisionCheck cChecker = new CollisionCheck(this);
     public LevelManager   levelM   = new LevelManager(this);
-    public final SoundManager soundManager = new SoundManager();
+    public final SoundManager soundManager;
+    public final ui.BloodStainOverlay bloodStain = new ui.BloodStainOverlay(this);
 
     Player player = new Player(this, this.keyH);
 
@@ -95,6 +96,11 @@ public class GamePanel extends JPanel implements Runnable {
     public KeyHandler getKeyH() { return keyH; }
 
     public GamePanel() {
+        this(new SoundManager());
+    }
+
+    public GamePanel(SoundManager soundManager) {
+        this.soundManager = soundManager != null ? soundManager : new SoundManager();
         this.setPreferredSize(new Dimension(screenWidht, screenHeight));
         this.setBackground(Color.black);
         this.setDoubleBuffered(true);
@@ -210,6 +216,7 @@ public class GamePanel extends JPanel implements Runnable {
         nearChest    = false;
         activeChest  = null;
 
+        bloodStain.update();
         cChecker.checkNearStair();
         player.update();
         levelM.update();
@@ -341,6 +348,7 @@ public class GamePanel extends JPanel implements Runnable {
         player.draw(g2);
         for (Bullet b          : fs.bullets)       b.draw(g2, this);
 
+        bloodStain.draw(g2);
         drawHUD(g2);
         g2.dispose();
     }
