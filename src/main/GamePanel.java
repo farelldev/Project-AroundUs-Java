@@ -8,6 +8,7 @@ import item.ExplosiveBarrel;
 import item.Items;
 import tiles.TileManager;
 import ui.SoundManager;
+import ui.GameOverScreen;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -42,9 +43,9 @@ public class GamePanel extends JPanel implements Runnable {
     // ── FloorState: semua entity per lantai ada di sini ──────────────────────
     // Index 0 tidak dipakai — gunakan floor[1] dan floor[2] langsung
     public final FloorState[] floor = new FloorState[] {
-        null,               // index 0 (tidak dipakai)
-        new FloorState(1),  // Lantai 1
-        new FloorState(2)   // Lantai 2
+            null,               // index 0 (tidak dipakai)
+            new FloorState(1),  // Lantai 1
+            new FloorState(2)   // Lantai 2
     };
 
     public int activeFloor = 1;
@@ -83,6 +84,14 @@ public class GamePanel extends JPanel implements Runnable {
     public boolean nearChest   = false;
     public Chest   activeChest = null;
 
+    // ── Score & Game Over ─────────────────────────────────────────────────────
+    public int  score          = 0;
+    public boolean gameOver    = false;
+    private GameOverScreen gameOverScreen;
+
+    /** Callback yang di-set dari Main.java untuk kembali ke menu utama */
+    private Runnable onBackToMainMenu;
+
     // ── UI Images ─────────────────────────────────────────────────────────────
     private BufferedImage hpImg100, hpImg75, hpImg50, hpImg25, hpImg10;
     private BufferedImage zombieCounterBG;
@@ -94,6 +103,11 @@ public class GamePanel extends JPanel implements Runnable {
     private Font cpRegular, cpBold, cpItalic, cpBoldItalic;
 
     public KeyHandler getKeyH() { return keyH; }
+
+    /** Dipanggil dari Main.java untuk menghubungkan navigasi balik ke menu */
+    public void setOnBackToMainMenu(Runnable callback) {
+        this.onBackToMainMenu = callback;
+    }
 
     public GamePanel() {
         this(new SoundManager());
@@ -112,6 +126,7 @@ public class GamePanel extends JPanel implements Runnable {
         loadHealthImages();
         loadUIImages();
         loadFonts();
+        initGameOverScreen();
 
         soundManager.playBGM("beforePlay");
     }
@@ -160,6 +175,103 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
+    // ── Game Over screen ──────────────────────────────────────────────────────
+
+    private void initGameOverScreen() {
+        gameOverScreen = new GameOverScreen(
+                soundManager,
+                this::restartGame,   // tryAgain
+                this::goToMainMenu   // backToMain
+        );
+        // Overlay harus di-layout tepat di atas GamePanel dengan ukuran sama
+        gameOverScreen.setBounds(0, 0, screenWidht, screenHeight);
+        setLayout(null);
+        add(gameOverScreen);
+    }
+
+    /**
+     * Dipanggil saat HP player = 0. Hentikan game loop, tampilkan overlay.
+     */
+    public void triggerGameOver() {
+        if (gameOver) return;
+        gameOver = true;
+        soundManager.playSFX("player_death");
+
+        // Tunda sedikit agar animasi mati sempat render
+        javax.swing.Timer delay = new javax.swing.Timer(600, e -> {
+            gameOverScreen.showScreen(score, this);
+        });
+        delay.setRepeats(false);
+        delay.start();
+    }
+
+    /** Callback tryAgain — stop thread lama, reset state, start ulang */
+    private void restartGame() {
+        // Hentikan game thread lama dulu agar tidak ada race condition
+        gameThread = null;
+
+        SwingUtilities.invokeLater(() -> {
+            gameOverScreen.hideScreen();
+            gameOver = false;
+            score    = 0;
+            soundManager.stopBGM();
+
+            // Reset floor states
+            floor[1] = new FloorState(1);
+            floor[2] = new FloorState(2);
+            activeFloor = 1;
+
+            // Reset semua manager & player
+            tileM  = new TileManager(this);
+            levelM = new LevelManager(this);
+            player = new Player(this, this.keyH);
+            bloodStain.reset();
+
+            pendingFloorSwitch = false;
+            pendingFloor       = -1;
+            nearStair          = false;
+            nearChest          = false;
+            activeChest        = null;
+            buttonAnimCounter  = 0;
+            buttonAnimFrame    = 0;
+
+            soundManager.playBGM("beforePlay");
+
+            // Start thread baru
+            startGameThread();
+            requestFocusInWindow();
+        });
+    }
+
+    /** Callback backToMain — kembali ke menu utama via callback dari Main.java */
+    private void goToMainMenu() {
+        // Hentikan game thread
+        gameThread = null;
+
+        SwingUtilities.invokeLater(() -> {
+            gameOverScreen.hideScreen();
+            gameOver = false;
+            score    = 0;
+            soundManager.stopBGM();
+
+            // Reset state game untuk sesi berikutnya
+            floor[1] = new FloorState(1);
+            floor[2] = new FloorState(2);
+            activeFloor = 1;
+            tileM  = new TileManager(this);
+            levelM = new LevelManager(this);
+            player = new Player(this, this.keyH);
+            bloodStain.reset();
+            pendingFloorSwitch = false;
+            pendingFloor       = -1;
+
+            // Jalankan navigasi yang di-set dari Main.java
+            if (onBackToMainMenu != null) {
+                onBackToMainMenu.run();
+            }
+        });
+    }
+
     // ── Floor switch ──────────────────────────────────────────────────────────
 
     public void requestFloorSwitch(int toFloor) {
@@ -190,26 +302,34 @@ public class GamePanel extends JPanel implements Runnable {
         double drawInterval = 1_000_000_000.0 / FPS;
         double delta  = 0;
         long lastTime = System.nanoTime();
-        long timer    = 0;
 
         while (gameThread != null) {
             long currentTime = System.nanoTime();
             delta += (currentTime - lastTime) / drawInterval;
-            timer += (currentTime - lastTime);
             lastTime = currentTime;
 
             if (delta >= 1) {
-                update();
-                repaint();
-                delta--;
+                // Kalau game over, jangan biarkan delta menumpuk
+                if (gameOver) {
+                    delta = 0;
+                } else {
+                    update();
+                    repaint();
+                    delta--;
+                }
+            } else {
+                // Tidur sebentar agar CPU tidak spinning penuh
+                try { Thread.sleep(1); } catch (InterruptedException ignored) {}
             }
-            if (timer >= 1_000_000_000) timer = 0;
         }
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
 
     public void update() {
+        // ── Jika game over, hentikan semua update ─────────────────────────────
+        if (gameOver) return;
+
         nearStair    = false;
         nearStairCol = -1;
         nearStairRow = -1;
@@ -220,6 +340,12 @@ public class GamePanel extends JPanel implements Runnable {
         cChecker.checkNearStair();
         player.update();
         levelM.update();
+
+        // ── Cek kematian pemain ───────────────────────────────────────────────
+        if (player.getHp() <= 0) {
+            triggerGameOver();
+            return;
+        }
 
         // Ambil snapshot list floor aktif untuk frame ini
         FloorState          fs            = getActiveFloor();
@@ -278,7 +404,10 @@ public class GamePanel extends JPanel implements Runnable {
         while (zIt.hasNext()) {
             Zombie z = zIt.next();
             z.update();
-            if (z.isDoneWithDeadAnim()) zIt.remove();
+            if (z.isDoneWithDeadAnim()) {
+                score += 10 * levelM.currentLevel; // +10 per kill, dikali level
+                zIt.remove();
+            }
         }
 
         // ── Pickup dropped items (hanya floor aktif) ──────────────────────────
@@ -350,7 +479,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         bloodStain.draw(g2);
         drawHUD(g2);
-        g2.dispose();
+        // JANGAN dispose g2 di sini — Swing masih butuhnya untuk paint children (GameOverScreen)
     }
 
     // ── HUD ───────────────────────────────────────────────────────────────────
@@ -366,13 +495,14 @@ public class GamePanel extends JPanel implements Runnable {
         // Ammo
         int     ammo      = player.getWeapon().getAmmo();
         int     maxAmmo   = player.getWeapon().getMaxAmmo();
+        int     reserve   = player.getWeapon().getReserveAmmo();
         boolean reloading = player.getWeapon().isReloading();
         String  wpnLabel  = player.getWeapon().getType().name();
 
-        int ammoBgX = screenWidht - 150;
+        int ammoBgX = screenWidht - 165;
         int ammoBgY = screenHeight - 36;
         g2.setColor(new Color(0, 0, 0, 160));
-        g2.fillRoundRect(ammoBgX, ammoBgY, 140, 26, 8, 8);
+        g2.fillRoundRect(ammoBgX, ammoBgY, 155, 26, 8, 8);
 
         if (reloading) {
             g2.setFont(cpBoldItalic);
@@ -385,6 +515,9 @@ public class GamePanel extends JPanel implements Runnable {
             g2.setFont(cpBold);
             g2.setColor(Color.WHITE);
             g2.drawString(ammo + " / " + maxAmmo, ammoBgX + 52, ammoBgY + 19);
+            g2.setFont(cpItalic);
+            g2.setColor(new Color(180, 200, 255));
+            g2.drawString("| " + reserve, ammoBgX + 110, ammoBgY + 19);
         }
 
         // Level
@@ -405,7 +538,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         // Zombie counter (total semua lantai)
         long total = floor[1].zombies.stream().filter(z -> !z.isDead()).count()
-                   + floor[2].zombies.stream().filter(z -> !z.isDead()).count();
+                + floor[2].zombies.stream().filter(z -> !z.isDead()).count();
         String zombieStr = "[ ZOMBIE: " + total + " ]";
         g2.setFont(cpBoldItalic);
         FontMetrics fmz = g2.getFontMetrics();

@@ -333,6 +333,26 @@ public class MainMenuPanel extends JPanel implements Runnable {
         loopThread.start();
     }
 
+    /** Reset state menu ke awal (MENU_IDLE) — dipanggil sebelum startLoop() saat balik dari game */
+    public void resetToStart() {
+        state             = MenuState.MENU_IDLE;
+        loadingFrame      = 0;
+        loadingTimer      = 0;
+        loadingCycleCount = 0;
+        hoveredBtn        = BtnId.NONE;
+        clickedBtn        = BtnId.NONE;
+        stopClip(sfxFlicker);
+        stopClip(sfxFlickerDone);
+    }
+
+    /** Restart BGM menu setelah kembali dari game */
+    public void restartBGM() {
+        if (soundManager != null) {
+            soundManager.stopBGM();
+            soundManager.playBGM("beforePlay");
+        }
+    }
+
     public void stopLoop() {
         running = false;
         stopClip(sfxFlicker);
