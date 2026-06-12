@@ -128,6 +128,9 @@ public class LevelManager {
         if (nextSpawnTime > 30) nextSpawnTime -= 15;
         System.out.println("--- NAIK KE LEVEL " + currentLevel + " ---");
 
+        // Bonus score naik level
+        gp.score += 50 * (currentLevel - 1);
+
         spawnChestsForFloor(1);
         spawnChestsForFloor(2);
         spawnBarrelsForFloor(1);

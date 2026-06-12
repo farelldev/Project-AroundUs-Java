@@ -29,6 +29,8 @@ public class Weapon {
     // ===== State aktif =====
     private int ammo;
     private int maxAmmo;
+    private int reserveAmmo;
+    private static final int MAX_RESERVE_AMMO = 999;
     private int damage;
     private int SHOT_DELAY;
 
@@ -86,6 +88,7 @@ public class Weapon {
             SHOT_DELAY = AK_SHOT_DELAY;
         }
         ammo = maxAmmo;
+        reserveAmmo = 30; // ammo cadangan awal
     }
 
     /** Dipanggil saat player memungut item AK47 */
@@ -99,17 +102,19 @@ public class Weapon {
     }
 
     // ===== Getter =====
-    public float getX()          { return weaponX; }
-    public float getY()          { return weaponY; }
-    public boolean isReloading() { return isReloading; }
-    public int getAmmo()         { return ammo; }
-    public int getMaxAmmo()      { return maxAmmo; }
-    public double getAngle()     { return angle; }
-    public WeaponType getType()  { return currentType; }
+    public float getX()             { return weaponX; }
+    public float getY()             { return weaponY; }
+    public boolean isReloading()    { return isReloading; }
+    public int getAmmo()            { return ammo; }
+    public int getMaxAmmo()         { return maxAmmo; }
+    public int getReserveAmmo()     { return reserveAmmo; }
+    public double getAngle()        { return angle; }
+    public WeaponType getType()     { return currentType; }
 
     public void startReload() {
         if (isReloading) return;
         if (ammo >= maxAmmo) return;
+        if (reserveAmmo <= 0) { System.out.println("[Weapon] Tidak ada ammo cadangan!"); return; }
         isReloading = true;
         reloadTimer = 0;
         isShooting  = false;
@@ -162,10 +167,13 @@ public class Weapon {
             weaponY = (float)(playerWorldCenterY + Math.sin(angle));
 
             if (reloadTimer >= RELOAD_DURATION) {
-                ammo        = maxAmmo;
+                int needed  = maxAmmo - ammo;
+                int refill  = Math.min(needed, reserveAmmo);
+                ammo       += refill;
+                reserveAmmo -= refill;
                 isReloading = false;
                 reloadTimer = 0;
-                System.out.println("[Weapon] Reload selesai! Ammo: " + ammo + "/" + maxAmmo);
+                System.out.println("[Weapon] Reload selesai! Ammo: " + ammo + "/" + maxAmmo + " | Cadangan: " + reserveAmmo);
             }
             return;
         }
@@ -198,8 +206,13 @@ public class Weapon {
         }
     }
 
+    public void addReserveAmmo(int amount) {
+        reserveAmmo = Math.min(reserveAmmo + amount, MAX_RESERVE_AMMO);
+        System.out.println("[Weapon] Ammo cadangan bertambah " + amount + "! Cadangan: " + reserveAmmo);
+    }
+
     public void addAmmo(int amount) {
-        this.ammo = Math.min(this.ammo + amount, maxAmmo);
+        addReserveAmmo(amount);
     }
 
     public void draw(Graphics2D g2) {

@@ -41,7 +41,7 @@ public class BloodStainOverlay {
         for (int i = 0; i < SPRITE_COUNT; i++) {
             try {
                 sprites[i] = ImageIO.read(
-                    getClass().getResourceAsStream("/uiGraphics/bloodStain/bloodStain" + (i + 1) + ".png"));
+                        getClass().getResourceAsStream("/uiGraphics/bloodStain/bloodStain" + (i + 1) + ".png"));
             } catch (Exception e) {
                 System.out.println("[BloodStain] Gagal load sprite " + (i + 1));
             }
@@ -220,5 +220,9 @@ public class BloodStainOverlay {
         boolean isDone() {
             return !holding && opacity <= 0;
         }
+    }
+
+    public void reset() {
+        activeStains.clear();
     }
 }

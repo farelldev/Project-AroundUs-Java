@@ -14,20 +14,27 @@ public class Main {
             window.setResizable(false);
             window.setTitle("Around Us: Apocalypse");
 
-            // Buat panel kontainer agar bisa ganti scene
             CardLayout cardLayout = new CardLayout();
             JPanel root = new JPanel(cardLayout);
 
             SoundManager soundManager = new SoundManager();
             GamePanel gamePanel = new GamePanel(soundManager);
 
-            // MainMenuPanel — akan memanggil callback ini saat animasi flicker selesai
             MainMenuPanel menuPanel = new MainMenuPanel(() -> {
-                // Ini dijalankan di EDT via SwingUtilities.invokeLater dari MainMenuPanel
                 cardLayout.show(root, "GAME");
                 gamePanel.requestFocusInWindow();
                 gamePanel.startGameThread();
             }, soundManager);
+
+            // Inject callback "kembali ke menu" ke GamePanel
+            gamePanel.setOnBackToMainMenu(() -> {
+                cardLayout.show(root, "MENU");
+                menuPanel.requestFocusInWindow();
+                menuPanel.stopLoop();
+                menuPanel.resetToStart();
+                menuPanel.startLoop();
+                menuPanel.restartBGM();
+            });
 
             root.add(menuPanel, "MENU");
             root.add(gamePanel, "GAME");
@@ -37,7 +44,6 @@ public class Main {
             window.setLocationRelativeTo(null);
             window.setVisible(true);
 
-            // Tampilkan menu dulu
             cardLayout.show(root, "MENU");
             menuPanel.requestFocusInWindow();
             menuPanel.startLoop();

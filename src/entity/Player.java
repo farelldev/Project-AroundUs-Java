@@ -91,6 +91,13 @@ public class Player extends Character {
 
     // -- Heal dari bandage ---------------------------
     public void heal(int healAmount) {
+        if (hp >= maxHp) { System.out.println("HP penuh!"); return; }
+        hp = Math.min(hp + healAmount, maxHp);
+        System.out.println("[Player] Heal +" + healAmount + " HP → " + hp + "/" + maxHp);
+    }
+
+    // -- Heal dari bandage bawaan (inventory manual) --
+    public void useInventoryBandage(int healAmount) {
         if (bandageBrought <= 0) { System.out.println("Bandage habis!"); return; }
         if (hp >= maxHp)         { System.out.println("HP penuh!"); return; }
         bandageBrought--;
@@ -100,9 +107,9 @@ public class Player extends Character {
 
     // --Ambil peluru dari ammo -----------------------
     public void addAmmo(int amount) {
-        this.ammo += amount;
-        System.out.println("Ammo bertambah " + amount +
-                "! Ammo sekarang: " + ammo);
+        if (weapon != null) {
+            weapon.addReserveAmmo(amount);
+        }
     }
 
     @Override

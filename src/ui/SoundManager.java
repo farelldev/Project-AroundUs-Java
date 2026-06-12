@@ -35,6 +35,7 @@ public class SoundManager {
         preload("zombie_alert");
         preload("zombie_idle");
         preload("uiClick");
+        preload("gameOver");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -182,6 +183,23 @@ public class SoundManager {
     public void playBGM(String name) {
         stopBGM();
         Thread t = new Thread(() -> {
+            // Coba dari cache dulu (sudah di-preload)
+            byte[] cached = audioCache.get(name);
+            if (cached != null) {
+                try {
+                    AudioInputStream ais = AudioSystem.getAudioInputStream(
+                            new java.io.BufferedInputStream(new java.io.ByteArrayInputStream(cached)));
+                    bgmClip = AudioSystem.getClip();
+                    bgmClip.open(ais);
+                    applyVolumeToBGM();
+                    bgmClip.loop(Clip.LOOP_CONTINUOUSLY);
+                    bgmClip.start();
+                    System.out.println("[Sound] BGM mulai (cache): " + name);
+                    return;
+                } catch (Exception ignored) {}
+            }
+
+            // Fallback: stream dari resource
             String[] resourcePaths = {
                     "/soundEffects/" + name + ".wav",
                     "/" + name + ".wav"
@@ -193,7 +211,7 @@ public class SoundManager {
                     AudioInputStream ais = AudioSystem.getAudioInputStream(is);
                     bgmClip = AudioSystem.getClip();
                     bgmClip.open(ais);
-                    applyVolumeToBGM();   // terapkan volume sebelum play
+                    applyVolumeToBGM();
                     bgmClip.loop(Clip.LOOP_CONTINUOUSLY);
                     bgmClip.start();
                     System.out.println("[Sound] BGM mulai (resource): " + name);
@@ -207,7 +225,7 @@ public class SoundManager {
                     AudioInputStream ais = AudioSystem.getAudioInputStream(f);
                     bgmClip = AudioSystem.getClip();
                     bgmClip.open(ais);
-                    applyVolumeToBGM();   // terapkan volume sebelum play
+                    applyVolumeToBGM();
                     bgmClip.loop(Clip.LOOP_CONTINUOUSLY);
                     bgmClip.start();
                     System.out.println("[Sound] BGM mulai (file): " + name);
